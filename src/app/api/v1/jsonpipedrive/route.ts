@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
 
   const lala = {
     "data": {
-      "id": 3,
+      "id": "leo stinkt",
       "header": "Hello",
     }
   }
