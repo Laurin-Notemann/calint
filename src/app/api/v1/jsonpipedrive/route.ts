@@ -35,11 +35,10 @@ export async function GET(request: NextRequest) {
 
 
   const lala = {
-    "data": [{
-      "company": "Test",
-      "source": "LALA",
-      "landingPage": "DONG",
-    }],
+    "data": {
+      "id": 3,
+      "header": "Hello",
+    }
   }
 
   return NextResponse.json(lala);

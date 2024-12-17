@@ -1,17 +1,15 @@
 {
-	"type": "array",
-	"items": {
-		"type": "object",
-		"properties": {
-			"company": {
-				"$ref": "#/definitions/text"
-			},
-			"source": {
-				"$ref": "#/definitions/text"
-			},
-			"landingPage": {
-				"$ref": "#/definitions/text"
-			}
+	"type": "object",
+	"required": [
+		"id",
+		"header"
+	],
+	"properties": {
+		"id": {
+			"$ref": "#/definitions/text"
+		},
+		"header": {
+			"$ref": "#/definitions/header"
 		}
 	}
 }
