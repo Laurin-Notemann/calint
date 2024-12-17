@@ -47,6 +47,21 @@ export async function GET(request: NextRequest) {
     },
   ];
 
+  const lala = {
+    "success": true,
+    "data": [{
+      "company": {
+        "value": "Test"
+      },
+      "source": {
+        "value": "LALA"
+      },
+      "landingPage": {
+        "value": "DONG"
+      }
+    }],
+    "additional_data": null
+  }
 
-  return NextResponse.json(panelData);
+  return NextResponse.json(lala);
 }
