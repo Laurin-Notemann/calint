@@ -33,34 +33,13 @@ export async function GET(request: NextRequest) {
   //    });
   //  }
 
-  const panelData = [
-    {
-      company: {
-        value: "Test"
-      },
-      source: {
-        value: "LALA"
-      },
-      landingPage: {
-        value: "DONG"
-      },
-    },
-  ];
 
   const lala = {
-    "success": true,
     "data": [{
-      "company": {
-        "value": "Test"
-      },
-      "source": {
-        "value": "LALA"
-      },
-      "landingPage": {
-        "value": "DONG"
-      }
+      "company": "Test",
+      "source": "LALA",
+      "landingPage": "DONG",
     }],
-    "additional_data": null
   }
 
   return NextResponse.json(lala);
