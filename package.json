@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "reset-db": "docker compose down && rm -rf ./drizzle && drizzle-kit generate && docker compose up -d && sleep 1 && drizzle-kit push"
+    "reset-db": "docker compose down && rm -rf ./drizzle && drizzle-kit generate && docker compose up -d && sleep 1 && drizzle-kit push",
+    "db-migration": "drizzle-kit generate && drizzle-kit push"
   },
   "dependencies": {
     "@t3-oss/env-core": "^0.11.1",

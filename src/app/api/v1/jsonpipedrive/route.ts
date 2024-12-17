@@ -1,16 +1,6 @@
-import dayjs from 'dayjs';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-type visitData = {
-  visitTime: string;  // date-time format
-  company: string;
-  source: string;
-  landingPage: string;
-  pageViews: number;
-  duration: string;
-}
-
-export async function GET(request: NextResponse) {
+export async function GET(request: NextRequest) {
   console.log(request);
   
   return NextResponse.json([{

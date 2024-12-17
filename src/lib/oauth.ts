@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers';
-// @ts-expect-error
+// @ts-expect-error because
 import { ApiClient, UsersApi } from 'pipedrive';
 import db from '@/db/db';
 import logger from '@/utils/logger';
@@ -65,91 +65,91 @@ export const updateTokens = (client: ApiClient, token: TokenResponse): void => {
 };
 
 // Get Session Details
-export const initializeSession = async (userId: string): Promise<SessionData> => {
-  try {
-    const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('session');
-
-    if (!sessionCookie) {
-      log.info('Session cookie is not found. Checking the database for OAuth details');
-      const [account] = await db
-        .select()
-        .from(users)
-        .where(eq(users.accountId, String(userId)));
-
-      if (!account) {
-        log.info('No matching account found. You need to authorize the app 🔑');
-        return { auth: false };
-      }
-
-      if (Date.now() > parseInt(account.expiresAt)) {
-        log.info('Account details found. Access token has expired');
-        const client = initAPIClient({
-          accessToken: account.accessToken,
-          refreshToken: account.refreshToken,
-        });
-        const refreshed = await client.refreshToken();
-        log.info('Token successfully refreshed');
-
-        await db
-          .update(users)
-          .set({
-            accessToken: refreshed.access_token,
-            refreshToken: refreshed.refresh_token,
-            expiresAt: String(Date.now() + 59 * 60 * 1000),
-          })
-          .where(eq(users.accountId, userId));
-
-        log.info('Database updated. Session cookie set 🍪');
-        return setSessionCookie(
-          true,
-          String(account.accountId),
-          account.name,
-          refreshed.access_token,
-          String(Date.now() + 59 * 60 * 1000)
-        );
-      }
-
-      log.info('Access token is valid. Session cookie set 🍪');
-      return setSessionCookie(
-        true,
-        account.accountId,
-        account.name,
-        account.accessToken,
-        account.expiresAt 
-      );
-    }
-
-    log.info('Session cookie found 🍪');
-    return JSON.parse(sessionCookie.value);
-  } catch (error) {
-    log.error("Couldn't create session :[");
-    log.error(error);
-    return { auth: false };
-  }
-};
-
-// Set cookies
-const setSessionCookie = async (
-  auth: boolean,
-  id: string,
-  name: string,
-  token: string,
-  expiry: string
-): Promise<SessionData> => {
-  const cookieStore = await cookies();
-  const newSession: SessionData = {
-    auth,
-    id,
-    name,
-    token,
-  };
-
-  cookieStore.set('session', JSON.stringify(newSession), {
-    maxAge: Math.round((parseInt(expiry) - Date.now()) / 1000),
-    sameSite: 'none',
-    secure: true,
-  });
-
-  return newSession;
-}; 
+//export const initializeSession = async (userId: string): Promise<SessionData> => {
+//  try {
+//    const cookieStore = await cookies();
+//    const sessionCookie = cookieStore.get('session');
+//
+//    if (!sessionCookie) {
+//      log.info('Session cookie is not found. Checking the database for OAuth details');
+//      const [account] = await db
+//        .select()
+//        .from(users)
+//        .where(eq(users.accountId, String(userId)));
+//
+//      if (!account) {
+//        log.info('No matching account found. You need to authorize the app 🔑');
+//        return { auth: false };
+//      }
+//
+//      if (Date.now() > parseInt(account.expiresAt)) {
+//        log.info('Account details found. Access token has expired');
+//        const client = initAPIClient({
+//          accessToken: account.accessToken,
+//          refreshToken: account.refreshToken,
+//        });
+//        const refreshed = await client.refreshToken();
+//        log.info('Token successfully refreshed');
+//
+//        await db
+//          .update(users)
+//          .set({
+//            accessToken: refreshed.access_token,
+//            refreshToken: refreshed.refresh_token,
+//            expiresAt: String(Date.now() + 59 * 60 * 1000),
+//          })
+//          .where(eq(users.accountId, userId));
+//
+//        log.info('Database updated. Session cookie set 🍪');
+//        return setSessionCookie(
+//          true,
+//          String(account.accountId),
+//          account.name,
+//          refreshed.access_token,
+//          String(Date.now() + 59 * 60 * 1000)
+//        );
+//      }
+//
+//      log.info('Access token is valid. Session cookie set 🍪');
+//      return setSessionCookie(
+//        true,
+//        account.accountId,
+//        account.name,
+//        account.accessToken,
+//        account.expiresAt 
+//      );
+//    }
+//
+//    log.info('Session cookie found 🍪');
+//    return JSON.parse(sessionCookie.value);
+//  } catch (error) {
+//    log.error("Couldn't create session :[");
+//    log.error(error);
+//    return { auth: false };
+//  }
+//};
+//
+//// Set cookies
+//const setSessionCookie = async (
+//  auth: boolean,
+//  id: string,
+//  name: string,
+//  token: string,
+//  expiry: string
+//): Promise<SessionData> => {
+//  const cookieStore = await cookies();
+//  const newSession: SessionData = {
+//    auth,
+//    id,
+//    name,
+//    token,
+//  };
+//
+//  cookieStore.set('session', JSON.stringify(newSession), {
+//    maxAge: Math.round((parseInt(expiry) - Date.now()) / 1000),
+//    sameSite: 'none',
+//    secure: true,
+//  });
+//
+//  return newSession;
+//}; 

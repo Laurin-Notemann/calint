@@ -1,12 +1,4 @@
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
-import { initializeSession } from '@/lib/oauth';
-
-export default async function Home({
-  searchParams,
-}: {
-  searchParams: { userId?: string };
-}) {
+export default async function Home() {
 //  const cookieStore = cookies();
 //  const session = await initializeSession( searchParams.userId);
 //
