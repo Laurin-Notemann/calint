@@ -1,0 +1,18 @@
+{
+	"type": "array",
+	"items": {
+		"type": "object",
+		"properties": {
+			"company": {
+				"$ref": "#/definitions/text"
+			},
+			"source": {
+				"$ref": "#/definitions/text"
+			},
+			"landingPage": {
+				"label": "Landing page",
+				"$ref": "#/definitions/text"
+			}
+		}
+	}
+}

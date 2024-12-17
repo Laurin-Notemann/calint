@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       expiresAt: dayjs().add(token.expires_in, 'second').toDate(),
     };
 
-    const [getUserErr, pipedriveUser] = await querier.checkPipedriveUserExist(parseInt(pipedriveId))
+    const [getUserErr, pipedriveUser] = await querier.checkUserExists(parseInt(pipedriveId))
 
     if (getUserErr)
       return NextResponse.redirect(new URL('/error', request.url));
@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
 
     // If there is no pipedrive user error
     if (pipedriveUser.length > 0) {
-      const [getCalendlyAccErr, calendlyAcc] = await querier.checkCalendlyUserExist(pipedriveUser[0].users.id)
+      const [getCalendlyAccErr, calendlyAcc] = await querier.checkCalendlyUserExist(pipedriveUser[0].id)
       if (getCalendlyAccErr)
         return NextResponse.redirect(new URL('/error', request.url));
 
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
           return NextResponse.redirect(new URL('/error', request.url));
 
       } else {
-        const [err, _] = await querier.addCalendlyAccountToUser(pipedriveUser[0].users.id, user.resource, credentials)
+        const [err, _] = await querier.addCalendlyAccountToUser(pipedriveUser[0].id, user.resource, credentials)
         if (err)
           return NextResponse.redirect(new URL('/error', request.url));
       }
@@ -66,6 +66,8 @@ export async function GET(request: NextRequest) {
 
 
     return NextResponse.redirect(new URL('/topipedrive', request.url));
+    // doesn't work right now
+    //return NextResponse.redirect('https://company.pipedrive.com');
   } catch (error) {
     console.log("ERROR CALENDLY: " + error)
     return NextResponse.redirect(new URL('/error', request.url));

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { querier } from '@/db/queries';
 import { BaseUserMe } from '@/db/pipedrive-types';
 import dayjs from 'dayjs';
+import { env } from '@/lib/env';
 
 type GetAccessTokenPipedrive = {
   access_token: string;
@@ -35,23 +36,28 @@ export async function GET(request: NextRequest) {
       expiresAt: dayjs().add(token.expires_in, 'second').toDate(),
     };
 
-    const [checkUserErr, exUser] = await querier.checkPipedriveUserExist(me.id)
+    const [checkUserErr, exUser] = await querier.checkUserExists(me.id)
+    console.log("ERROR " + checkUserErr);
 
     if (checkUserErr)
       return NextResponse.redirect(new URL('/error', request.url));
 
     if (exUser.length > 0) {
       const [err, _] = await querier.loginWithPipedrive(me.id, credentials)
+      console.log("ERROR " + err);
       if (err)
         return NextResponse.redirect(new URL('/error', request.url));
 
     } else {
-      const [err, _] = await querier.createPipedriveUser(me, credentials)
+      const [err, _] = await querier.createUser(me, credentials)
+      console.log("ERROR " + err?.message);
+      console.log("ERROR " + err?.error);
       if (err)
         return NextResponse.redirect(new URL('/error', request.url));
     }
 
-    const response = NextResponse.redirect(new URL('/topipedrive', request.url));
+    const calendlyLink = `https://auth.calendly.com/oauth/authorize?client_id=${env.CALENDLY_CLIENT_ID}&response_type=code&redirect_uri=${env.CALENDLY_REDIRECT_URL}`
+    const response = NextResponse.redirect(calendlyLink);
 
     response.cookies.set('userId', String(me.id), {
       httpOnly: false,

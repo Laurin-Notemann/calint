@@ -1,34 +1,105 @@
 import { eq } from "drizzle-orm";
 import db from "./db";
 import { BaseUserMe } from "./pipedrive-types";
-import { calendlyAcc, pipedriveAcc, users } from "./schema";
+import { calendlyAcc, companies, Company, NewCompany, User, users } from "./schema";
+
+export type PromiseReturn<T> = Promise<Readonly<[QuerierError, null] | [null, T]>>
 
 export class DatabaseQueries {
   constructor() {
   }
 
-  async createPipedriveUser(user: BaseUserMe, { accessToken, refreshToken, expiresAt }: AccountLogin): Promise<Readonly<[null, boolean] | [QuerierError, null]>> {
+  async getCompany(companyDomain: string): PromiseReturn<Company> {
     try {
+      const company = await db
+        .select()
+        .from(companies)
+        .where(eq(companies.domain, companyDomain));
+
+      if (company.length < 1)
+        return [{
+          message: "Company not found",
+          error: new Error("Company not found")
+        }, null] as const;
+      else if (company.length > 1)
+        return [{
+          message: "Too many companies found",
+          error: new Error("Too many companies found")
+        }, null] as const;
+
+      return [null, company[0]] as const;
+    } catch (error) {
+      return [{
+        message: "Database error when trying to find company",
+        error
+      }, null] as const;
+    }
+  }
+
+  async createCompany(companyValues: NewCompany): PromiseReturn<Company> {
+    try {
+      const company = await db.insert(companies).values(companyValues).returning()
+
+      if (company.length < 1 || company.length > 1)
+        return [{
+          message: "Error when creating company",
+          error: new Error("Error when creating company")
+        }, null] as const;
+
+      return [null, company[0]] as const;
+    } catch (error) {
+      return [{
+        message: "Database error when trying to create company",
+        error
+      }, null] as const;
+    }
+  }
+
+  async createCompanyOrReturnCompany(companyValues: NewCompany): PromiseReturn<Company> {
+    try {
+      const [_, company] = await this.getCompany(companyValues.domain);
+
+      if (company)
+        return [null, company] as const;
+
+      const [createError, createdCompany] = await this.createCompany(companyValues)
+
+      if (createError)
+        return [createError, null]
+
+      return [null, createdCompany] as const;
+    } catch (error) {
+      return [{
+        message: "Database error when trying to create company",
+        error
+      }, null] as const;
+    }
+  }
+
+  async createUser(user: BaseUserMe, { accessToken, refreshToken, expiresAt }: AccountLogin): Promise<Readonly<[null, boolean] | [QuerierError, null]>> {
+    try {
+      const [error, company] = await this.createCompanyOrReturnCompany({
+        name: user.company_name,
+        domain: user.company_domain,
+      })
+
+      if (error)
+        return [error, null]
+
       const createdUserList = await db.insert(users).values({
-        name: user.name
+        id: user.id,
+        name: user.name,
+        accessToken,
+        refreshToken,
+        expiresAt,
+        companyId: company.id
       }).returning()
 
-      if (createdUserList.length < 0)
+      if (createdUserList.length < 1)
         return [{
           message: "could not create user",
           error: new Error("No user")
         }, null] as const
-
-      const createdUser = createdUserList[0]
-
-      await db.insert(pipedriveAcc).values({
-        id: user.id,
-        userId: createdUser.id,
-        companyDomain: user.company_domain,
-        accessToken,
-        refreshToken,
-        expiresAt
-      })
 
       return [null, true] as const
     } catch (error) {
@@ -41,8 +112,7 @@ export class DatabaseQueries {
 
   async loginWithPipedrive(pipedriveAccId: number, logins: AccountLogin): Promise<Readonly<[QuerierError, null] | [null, boolean]>> {
     try {
-
-      await db.update(pipedriveAcc).set(logins).where(eq(pipedriveAcc.id, pipedriveAccId))
+      await db.update(users).set(logins).where(eq(users.id, pipedriveAccId))
 
       return [null, true] as const
     } catch (error) {
@@ -53,7 +123,7 @@ export class DatabaseQueries {
     }
   }
 
-  async addCalendlyAccountToUser(userId: string, calendlyUser: CalendlyUser, { accessToken, refreshToken, expiresAt }: AccountLogin) {
+  async addCalendlyAccountToUser(userId: number, calendlyUser: CalendlyUser, { accessToken, refreshToken, expiresAt }: AccountLogin) {
     try {
       await db.insert(calendlyAcc).values({
         userId,
@@ -83,24 +153,22 @@ export class DatabaseQueries {
     }
   }
 
-  async checkPipedriveUserExist(pipedriveAccId: number): Promise<Readonly<[QuerierError, null] | [null, UserPipedriveUnion[]]>> {
+  async checkUserExists(userId: number): Promise<Readonly<[QuerierError, null] | [null, User[]]>> {
     try {
-      const res = await db
+      const user = await db
         .select()
         .from(users)
-        .innerJoin(pipedriveAcc, eq(users.id, pipedriveAcc.userId))
-        .where(eq(pipedriveAcc.id, pipedriveAccId))
-        .limit(1)
+        .where(eq(users.id, userId))
 
-      return [null, res] as const
+      return [null, user] as const
     } catch (error) {
       return [{
-        message: "Account could not be found",
+        message: "DB: User could not be found",
         error
       }, null] as const
     }
   }
-  async checkCalendlyUserExist(userId: string) {
+  async checkCalendlyUserExist(userId: number) {
     try {
       const res = await db
         .select()

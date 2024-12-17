@@ -36,8 +36,13 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
 ## Todos:
-- [ ] change user to only pipedrive user and one to many pipedrive to calendly (so only two tables)
-- [ ] automatic redirect to calendly and then automatic back to pipedrive (unless it's an error)
+- [x] change user to only pipedrive user and one to many pipedrive to calendly (so only two tables)
+- [x] automatic redirect to calendly and then automatic back to pipedrive (unless it's an error)
+- [x] add company 
+- [x] admin/users
+- [ ] look at components
+- [ ] settings components and table
+- [ ] p
 - [ ] correct error page
 - [ ] better loader page on the /calendly/callback to signal the user they need to wait
 
