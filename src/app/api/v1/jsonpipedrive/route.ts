@@ -33,21 +33,19 @@ export async function GET(request: NextRequest) {
   //    });
   //  }
 
-  const panelData = {
-    items: [
-      {
-        company: {
-          value: "Test"
-        },
-        source: {
-          value: "LALA"
-        },
-        landingPage: {
-          value: "DONG"
-        },
+  const panelData = [
+    {
+      company: {
+        value: "Test"
       },
-    ],
-  };
+      source: {
+        value: "LALA"
+      },
+      landingPage: {
+        value: "DONG"
+      },
+    },
+  ];
 
 
   return NextResponse.json(panelData);
