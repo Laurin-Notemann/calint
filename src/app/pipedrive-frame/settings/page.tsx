@@ -12,10 +12,11 @@ export default function PipedriveFrame() {
         // You can access Pipedrive context here
         const settings = sdk.userSettings;
         console.log('Pipedrive context:', settings);
-        const { status } = sdk.execute(Command.OPEN_MODAL, {
+        const { status } = await sdk.execute(Command.OPEN_MODAL, {
           type: Modal.JSON_MODAL,
-          action_id: "test panel"
+          action_id: "Calint Settings"
         })
+        console.log('status', status);
       } catch (error) {
         console.error('Failed to initialize Pipedrive SDK:', error);
       }
