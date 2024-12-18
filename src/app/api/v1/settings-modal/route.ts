@@ -71,7 +71,8 @@ export async function GET(request: NextRequest) {
   const [eventTypesErr, eventTypes] = await calendlyClient.getAllEventTypes();
 
   if (eventTypesErr) {
-    console.error("EventType Error", eventTypesErr);
+    console.error("EventType Error", eventTypesErr.error);
+    console.error("lala", eventTypesErr.error.details);
 
     return NextResponse.json({ error: "Could not get Event types" + eventTypesErr.error }, { status: 400 })
   }
