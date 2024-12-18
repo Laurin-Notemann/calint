@@ -73,6 +73,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL('/error', request.url));
     }
 
+    console.log("CALENDLY WEBHOOK", res);
+
+
     return NextResponse.redirect(new URL('/topipedrive', request.url));
     // doesn't work right now
     //return NextResponse.redirect('https://company.pipedrive.com');
