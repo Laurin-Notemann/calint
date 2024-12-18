@@ -37,8 +37,15 @@ function PipedriveFrameContent() {
   return (
     <div className="p-4">
       {settingData
-        ? <div className='flex flex-col gap-2'>DAta {settingData.data.calendlyEventTypes.collection.map((event, index) => (
-          <span key={index}>{event.name}</span>
+        ? <div className='flex flex-col gap-2'>{settingData.data.calendlyEventTypes.collection.map((event, index) => (
+          <>
+            <span key={index}>{event.name}</span>
+            <select>
+              {settingData.data.pipedriveAcitvityTypes.map((activity, index) => (
+                <option key={index}>{activity.name}</option>
+              ))}
+            </select>
+          </>
         ))}
         </div>
         : <div>
