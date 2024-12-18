@@ -10,7 +10,7 @@ export class CalendlyClient {
     this.refreshToken = refreshToken ? refreshToken : ""
   }
 
-  async createWebhookSubscripton(organisation: string, user: string) {
+  async createWebhookSubscripton(organization: string, user: string) {
     const body = {
       url: "https://calint.laurinnotemann.dev/api/v1/calendly/webhook",
       events: [
@@ -19,7 +19,7 @@ export class CalendlyClient {
         "invitee_no_show.created",
         "invitee_no_show.deleted"
       ],
-      organisation,
+      organization,
       user,
       scope: "organization",
     }
