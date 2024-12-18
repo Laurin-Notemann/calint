@@ -10,6 +10,40 @@ export class CalendlyClient {
     this.refreshToken = refreshToken ? refreshToken : ""
   }
 
+  async createWebhookSubscripton(organisation: string, user: string) {
+    const body = {
+      url: "https://calint.laurinnotemann.dev/api/v1/calendly/webhook",
+      events: [
+        "invitee.created",
+        "invitee.canceled",
+        "invitee_no_show.created",
+        "invitee_no_show.deleted"
+      ],
+      organisation,
+      user,
+      scope: "organization",
+    }
+    const options = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer ' + this.accessToken
+      },
+      body: JSON.stringify(body)
+    };
+
+    try {
+      const res = await fetch('https://api.calendly.com/webhook_subscriptions', options);
+      const body: CalendlyWebhookSubscription = await res.json();
+      return [null, body] as const;
+    } catch (error) {
+      return [{
+        message: "Could create webhook_subscriptions",
+        error
+      }, null] as const
+    }
+  }
+
   async getAccessToken(code: string) {
     const body = new URLSearchParams({
       grant_type: "authorization_code",
@@ -83,3 +117,21 @@ export type GetAccessTokenRes = {
 export type CalendlyGetUserMeRes = {
   resource: CalendlyUser
 };
+
+interface CalendlyWebhookSubscription {
+  resource: {
+    uri: string;
+    callback_url: string;
+    created_at: string;  // ISO 8601 datetime string
+    updated_at: string;  // ISO 8601 datetime string
+    retry_started_at: string;  // ISO 8601 datetime string
+    state: 'active' | string;  // You might want to add other possible states
+    events: string[];
+    scope: 'user' | string;    // You might want to add other possible scopes
+    organization: string;
+    user: string;
+    group: string;
+    creator: string;
+  }
+}
+

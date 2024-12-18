@@ -66,6 +66,12 @@ export async function GET(request: NextRequest) {
     } else
       return NextResponse.redirect(new URL('/error', request.url));
 
+    const [webhookError, res] = await calClient.createWebhookSubscripton(user.resource.current_organization, user.resource.uri);
+    if (webhookError) {
+      console.error("WebhookError", webhookError.error);
+
+      return NextResponse.redirect(new URL('/error', request.url));
+    }
 
     return NextResponse.redirect(new URL('/topipedrive', request.url));
     // doesn't work right now
