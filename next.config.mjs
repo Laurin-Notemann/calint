@@ -21,6 +21,19 @@ const nextConfig = {
           }
         ],
       },
+      {
+        source: '/pipedrive-frame/settings-modal',
+        headers: [
+          {
+            key: 'X-Frame-Options',
+            value: 'ALLOW-FROM https://*.pipedrive.com'
+          },
+          {
+            key: 'Content-Security-Policy',
+            value: "frame-ancestors 'self' https://*.pipedrive.com"
+          }
+        ],
+      },
     ];
   }
 };
