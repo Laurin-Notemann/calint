@@ -10,6 +10,34 @@ export class CalendlyClient {
     this.refreshToken = refreshToken ? refreshToken : ""
   }
 
+  async getAllEventTypes() {
+    const options = {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer ' + this.accessToken
+      },
+    };
+
+    try {
+      const res = await fetch('https://api.calendly.com/event_types', options);
+      const body: EventType[] = await res.json();
+      if (res.status !== 200) {
+        return [{
+          message: "Could not get EventTypes",
+          error: body as any
+        }, null] as const
+      }
+      return [null, body] as const;
+    } catch (error) {
+      return [{
+        message: "Could not get EventTypes",
+        error: error as any
+      }, null] as const
+    }
+
+  }
+
   async createWebhookSubscripton(organization: string, user: string) {
     const body = {
       url: "https://calint.laurinnotemann.dev/api/v1/calendly/webhook",
@@ -38,14 +66,14 @@ export class CalendlyClient {
       if (res.status !== 201) {
         return [{
           message: "Could not create webhook",
-          error: body
+          error: body as any
         }, null] as const
       }
       return [null, body] as const;
     } catch (error) {
       return [{
         message: "Could not create webhook_subscriptions",
-        error
+        error: error as any
       }, null] as const
     }
   }
@@ -124,7 +152,7 @@ export type CalendlyGetUserMeRes = {
   resource: CalendlyUser
 };
 
-interface CalendlyWebhookSubscription {
+export interface CalendlyWebhookSubscription {
   resource: {
     uri: string;
     callback_url: string;
@@ -140,4 +168,65 @@ interface CalendlyWebhookSubscription {
     creator: string;
   }
 }
+
+export type Profile = {
+  type: 'User' | 'Team';
+  name: string;
+  owner: string;
+}
+
+export type CustomQuestion = {
+  name: string;
+  type: 'string' | 'text' | 'single_select' | 'multi_select' | 'phone_number';
+  position: number;
+  enabled: boolean;
+  required: boolean;
+  answer_choices: string[] | null;
+  include_other: boolean;
+}
+
+export type Location = {
+  kind: string;
+  phone_number?: string;
+  additional_info?: string;
+  position: number;
+}
+
+export type BaseEventType = {
+  uri: string;
+  name: string;
+  active: boolean;
+  booking_method: 'instant' | 'poll';
+  slug: string | null;
+  scheduling_url: string;
+  duration: number;
+  kind: 'solo' | 'group';
+  color: string;
+  created_at: string;
+  updated_at: string;
+  internal_note: string | null;
+  description_plain: string | null;
+  description_html: string | null;
+  profile: Profile;
+  secret: boolean;
+  deleted_at: string | null;
+  admin_managed: boolean;
+  locations: Location[];
+  custom_questions: CustomQuestion[];
+  position: number;
+}
+
+export type StandardEventType = BaseEventType & {
+  type: 'StandardEventType';
+  duration_options: number[];
+  pooling_type: 'round_robin' | 'collective' | 'multi_pool' | null;
+}
+
+export type AdhocEventType = BaseEventType & {
+  type: 'AdhocEventType';
+  duration_options: null;
+  pooling_type: null;
+}
+
+export type EventType = StandardEventType | AdhocEventType;
 

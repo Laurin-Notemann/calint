@@ -11,8 +11,8 @@ export const calendlyAcc = pgTable("calendly_acc", {
   uri: varchar("uri").primaryKey(),
   name: text('name'),
   organization: text("organization"),
-  refreshToken: text('refresh_token'),
-  accessToken: text('access_token'),
+  refreshToken: text('refresh_token').notNull(),
+  accessToken: text('access_token').notNull(),
   expiresAt: timestamp('expires_at'),
   userId: integer("user_id")
     .notNull()
@@ -63,3 +63,11 @@ export const pipedriveActivity = pgTable("pipedrive_activity", {
 
 export type Company = typeof companies.$inferSelect;
 export type NewCompany = typeof companies.$inferInsert;
+
+export type CalendlyAcc = typeof calendlyAcc.$inferSelect;
+export type NewCalendlyAcc = typeof calendlyAcc.$inferInsert;
+
+export type UserCalendly = {
+  calendly_acc: CalendlyAcc;
+  users: User
+}

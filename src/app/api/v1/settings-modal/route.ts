@@ -1,4 +1,5 @@
 import { querier } from '@/db/queries';
+import { CalendlyClient } from '@/lib/calendly-client';
 import { initAPIClient } from '@/lib/oauth';
 import { NextRequest, NextResponse } from 'next/server';
 // @ts-expect-error because pipedrive sucks
@@ -28,27 +29,23 @@ export async function GET(request: NextRequest) {
   if (!stringUserId)
     return NextResponse.json({ error: "No UserID" }, { status: 400 })
 
-  console.log("test")
-
   const userId = parseInt(stringUserId)
 
-  const [getUserErr, user] = await querier.getUser(userId)
+  const [getUserErr, userCalendly] = await querier.getUserAndCalendlyAcc(userId)
   if (getUserErr) {
     return NextResponse.json({ error: getUserErr.message }, { status: 400 })
   }
-  console.log("test1")
+
+  const user = userCalendly.users
 
   const pipedriveClient = initAPIClient({ accessToken: user.accessToken, refreshToken: user.refreshToken })
-  console.log("test2")
 
   const apiInstance = new ActivityTypesApi(pipedriveClient)
-  console.log("test3")
 
   let data: ActivityType[];
   try {
 
     const res: ActivityTypesResponse = await apiInstance.getActivityTypes()
-    console.log("test4")
     data = res.data
 
   } catch (error) {
@@ -63,16 +60,32 @@ export async function GET(request: NextRequest) {
       value: index + 1
     }
   })
-  console.log("test5")
+
+  const calendlyAcc = userCalendly.calendly_acc;
+
+  const calendlyClient = new CalendlyClient({
+    accessToken: calendlyAcc.accessToken,
+    refreshToken: calendlyAcc.refreshToken
+  });
+
+  const [eventTypesErr, eventTypes] = await calendlyClient.getAllEventTypes();
+
+  if (eventTypesErr)
+    return NextResponse.json({ error: "Could not get Event types" }, { status: 400 })
 
   const leler = {
     data: {
-      blocks: {
-        block_key_delivery_method: {
-          value: 1,
-          items: activityTypeNames
+      blocks: [
+        {
+          block_key_calendly_event_type: {
+            value: eventTypes[0].name,
+          },
+          block_key_pipedrive_action_types: {
+            value: 1,
+            items: activityTypeNames
+          },
         },
-      },
+      ],
       actions: {}
     }
   }

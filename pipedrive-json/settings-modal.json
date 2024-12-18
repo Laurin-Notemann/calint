@@ -4,7 +4,13 @@
     "blocks": {
       "type": "object",
       "properties": {
-        "block_key_delivery_method": {
+        "block_key_calendly_event_type": {
+          "$ref": "#/definitions/element-text",
+          "options": {
+            "value": "Placeholder"
+          }
+        },
+        "block_key_pipedrive_action_types": {
           "$ref": "#/definitions/element-select",
           "options": {
             "label": "Pipedrive actions",

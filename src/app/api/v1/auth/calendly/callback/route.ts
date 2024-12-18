@@ -69,8 +69,8 @@ export async function GET(request: NextRequest) {
     const [webhookError, res] = await calClient.createWebhookSubscripton(user.resource.current_organization, user.resource.uri);
     if (webhookError) {
       console.error("WebhookError", webhookError.error);
-
-      return NextResponse.redirect(new URL('/error', request.url));
+      if (webhookError.error.title !== "Already Exists")
+        return NextResponse.redirect(new URL('/error', request.url));
     }
 
     console.log("CALENDLY WEBHOOK", res);

@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import db from "./db";
 import { BaseUserMe } from "./pipedrive-types";
-import { calendlyAcc, companies, Company, NewCompany, User, users } from "./schema";
+import { calendlyAcc, companies, Company, NewCompany, User, UserCalendly, users } from "./schema";
 
 export type PromiseReturn<T> = Promise<Readonly<[QuerierError, null] | [null, T]>>
 
@@ -26,6 +26,29 @@ export class DatabaseQueries {
     } catch (error) {
       return [{
         message: "Database error trying to find user",
+        error
+      }, null] as const;
+    }
+  }
+
+  async getUserAndCalendlyAcc(userId: number): PromiseReturn<UserCalendly> {
+    try {
+      const res = await db
+        .select()
+        .from(users)
+        .innerJoin(calendlyAcc, eq(users.id, calendlyAcc.userId))
+        .where(eq(users.id, userId))
+
+      if (res.length != 1)
+        return [{
+          message: "No user or calendly acc found",
+          error: new Error("No user or calendly acc found")
+        }, null] as const
+
+      return [null, res[0]]
+    } catch (error) {
+      return [{
+        message: "Database error trying to find user and calendly acc",
         error
       }, null] as const;
     }
