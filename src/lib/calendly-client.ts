@@ -55,7 +55,7 @@ export class CalendlyClient {
   }
 
   async getAllEventTypes() {
-    const [err, _] = await this.refreshAccessToken();
+    const [err, token] = await this.refreshAccessToken();
     if (err)
       return [{
         message: "Could not refresh token",
@@ -70,7 +70,7 @@ export class CalendlyClient {
     };
 
     try {
-      const res = await fetch('https://api.calendly.com/event_types', options);
+      const res = await fetch('https://api.calendly.com/event_types?organization=' + token.organization, options);
       const body: EventType[] = await res.json();
       if (res.status !== 200) {
         return [{
