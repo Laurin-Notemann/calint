@@ -16,7 +16,7 @@ export default function PipedriveFrame() {
           type: Modal.JSON_MODAL,
           action_id: "Calint Settings"
         })
-        console.log('status', status);
+        console.log('status', settings);
       } catch (error) {
         console.error('Failed to initialize Pipedrive SDK:', error);
       }

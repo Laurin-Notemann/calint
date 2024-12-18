@@ -10,6 +10,37 @@ export class CalendlyClient {
     this.refreshToken = refreshToken ? refreshToken : ""
   }
 
+  async refreshAccessToken() {
+    const body = new URLSearchParams({
+      grant_type: "refresh_token",
+      refresh_token: this.refreshToken
+    });
+
+    try {
+      const res = await fetch("https://auth.calendly.com/oauth/token", {
+        headers: {
+          "Authorization": "Basic " + btoa(env.CALENDLY_CLIENT_ID + ":" + env.CALENDLY_CLIENT_SECRET),
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        method: "POST",
+        body: body,
+      })
+
+      const data: GetAccessTokenRes = await res.json();
+
+      this.updateCalendlyTokens(data)
+
+      return [null, data] as const
+    } catch (error) {
+
+      return [{
+        message: "Could not get auth code",
+        error
+      }, null] as const
+    }
+
+  }
+
   async getAllEventTypes() {
     const options = {
       method: 'GET',
