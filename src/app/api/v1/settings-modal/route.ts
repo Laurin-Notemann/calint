@@ -1,5 +1,5 @@
 import { querier } from '@/db/queries';
-import { CalendlyClient } from '@/lib/calendly-client';
+import { CalendlyClient, EventType } from '@/lib/calendly-client';
 import { initAPIClient } from '@/lib/oauth';
 import { NextRequest, NextResponse } from 'next/server';
 // @ts-expect-error because pipedrive sucks
@@ -90,5 +90,19 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.json(leler);
+  const responseData: SettingsDataRes = {
+    data: {
+      calendlyEventTypes: eventTypes,
+      pipedriveAcitvityTypes: data
+    }
+  }
+
+  return NextResponse.json(responseData);
+}
+
+export type SettingsDataRes = {
+  data: {
+    calendlyEventTypes: EventType[];
+    pipedriveAcitvityTypes: ActivityType[];
+  }
 }
