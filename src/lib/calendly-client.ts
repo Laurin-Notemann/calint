@@ -35,10 +35,16 @@ export class CalendlyClient {
     try {
       const res = await fetch('https://api.calendly.com/webhook_subscriptions', options);
       const body: CalendlyWebhookSubscription = await res.json();
+      if (res.status !== 201) {
+        return [{
+          message: "Could not create webhook",
+          error: body
+        }, null] as const
+      }
       return [null, body] as const;
     } catch (error) {
       return [{
-        message: "Could create webhook_subscriptions",
+        message: "Could not create webhook_subscriptions",
         error
       }, null] as const
     }
