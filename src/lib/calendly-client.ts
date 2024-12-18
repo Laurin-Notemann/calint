@@ -1,5 +1,6 @@
-import { CalendlyUser } from "@/db/queries";
+import { CalendlyUser, querier } from "@/db/queries";
 import { env } from "./env"
+import dayjs from "dayjs";
 
 
 export class CalendlyClient {
@@ -29,6 +30,18 @@ export class CalendlyClient {
       const data: GetAccessTokenRes = await res.json();
 
       this.updateCalendlyTokens(data)
+
+      const credentials = {
+        accessToken: data.access_token,
+        refreshToken: data.refresh_token,
+        expiresAt: dayjs().add(data.expires_in, 'second').toDate(),
+      };
+      const [dbErr, _] = await querier.loginWithCalendly(data.owner, credentials)
+      if (dbErr)
+        return [{
+          message: "could not update db creds" + dbErr.message,
+          error: dbErr.error
+        }, null] as const
 
       return [null, data] as const
     } catch (error) {
@@ -66,11 +79,11 @@ export class CalendlyClient {
         }, null] as const
       }
       console.log("event type: ", body);
-      
+
       return [null, body] as const;
     } catch (error) {
       console.error("Event types error", error);
-      
+
       return [{
         message: "Could not get EventTypes",
         error: error as any
