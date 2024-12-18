@@ -38,7 +38,7 @@ function PipedriveFrameContent() {
     <div className="p-4">
       <h1>Your Integration Content</h1>
       {settingData
-        ? <div>DAta {settingData.data.calendlyEventTypes.map((event, index) => (
+        ? <div>DAta {settingData.data.calendlyEventTypes.collection.map((event, index) => (
           <span key={index}>{event.name}</span>
         ))}
         </div>

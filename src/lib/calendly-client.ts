@@ -71,7 +71,7 @@ export class CalendlyClient {
 
     try {
       const res = await fetch('https://api.calendly.com/event_types?organization=' + token.organization, options);
-      const body: EventType[] = await res.json();
+      const body: CalendlyResponse = await res.json();
       if (res.status !== 200) {
         return [{
           message: "Could not get EventTypes",
@@ -235,64 +235,65 @@ export interface CalendlyWebhookSubscription {
   }
 }
 
-export type Profile = {
-  type: 'User' | 'Team';
+export interface CalendlyResponse {
+  collection: EventType[];
+  pagination: Pagination;
+}
+
+export interface EventType {
+  uri: string;
+  name: string;
+  active: boolean;
+  booking_method: string;
+  slug: string;
+  scheduling_url: string;
+  duration: number;
+  duration_options: number[];
+  kind: string;
+  pooling_type: string;
+  type: string;
+  color: string;
+  created_at: string;
+  updated_at: string;
+  internal_note: string;
+  description_plain: string;
+  description_html: string;
+  profile: Profile;
+  secret: boolean;
+  deleted_at: null | string;
+  admin_managed: boolean;
+  locations: Location[];
+  position: number;
+  custom_questions: CustomQuestion[];
+}
+
+export interface Profile {
+  type: string;
   name: string;
   owner: string;
 }
 
-export type CustomQuestion = {
+export interface Location {
+  kind: string;
+  phone_number: number;
+  additional_info: string;
+}
+
+export interface CustomQuestion {
   name: string;
   type: 'string' | 'text' | 'single_select' | 'multi_select' | 'phone_number';
   position: number;
   enabled: boolean;
   required: boolean;
-  answer_choices: string[] | null;
+  answer_choices: string[];
   include_other: boolean;
 }
 
-export type Location = {
-  kind: string;
-  phone_number?: string;
-  additional_info?: string;
-  position: number;
+export interface Pagination {
+  count: number;
+  next_page: string;
+  previous_page: string;
+  next_page_token: string;
+  previous_page_token: string;
 }
-
-export type BaseEventType = {
-  uri: string;
-  name: string;
-  active: boolean;
-  booking_method: 'instant' | 'poll';
-  slug: string | null;
-  scheduling_url: string;
-  duration: number;
-  kind: 'solo' | 'group';
-  color: string;
-  created_at: string;
-  updated_at: string;
-  internal_note: string | null;
-  description_plain: string | null;
-  description_html: string | null;
-  profile: Profile;
-  secret: boolean;
-  deleted_at: string | null;
-  admin_managed: boolean;
-  locations: Location[];
-  custom_questions: CustomQuestion[];
-  position: number;
-}
-
-export type StandardEventType = BaseEventType & {
-  type: 'StandardEventType';
-  duration_options: number[];
-  pooling_type: 'round_robin' | 'collective' | 'multi_pool' | null;
-}
-
-export type AdhocEventType = BaseEventType & {
-  type: 'AdhocEventType';
-  duration_options: null;
-  pooling_type: null;
-}
-
-export type EventType = StandardEventType | AdhocEventType;
 
