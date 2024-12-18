@@ -65,8 +65,12 @@ export class CalendlyClient {
           error: body as any
         }, null] as const
       }
+      console.log("event type: ", body);
+      
       return [null, body] as const;
     } catch (error) {
+      console.error("Event types error", error);
+      
       return [{
         message: "Could not get EventTypes",
         error: error as any
