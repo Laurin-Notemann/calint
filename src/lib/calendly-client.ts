@@ -139,12 +139,6 @@ export class CalendlyClient {
   }
 
   async getAccessToken(code: string) {
-    const [err, _] = await this.refreshAccessToken();
-    if (err)
-      return [{
-        message: "Could not refresh token",
-        error: new Error("could not refresh token") as any
-      }, null] as const
     const body = new URLSearchParams({
       grant_type: "authorization_code",
       code: code,
