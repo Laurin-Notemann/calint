@@ -23,8 +23,11 @@ export async function GET(request: NextRequest) {
 
     console.log("TOKENS:", token);
 
-    if (tokenErr)
+    if (tokenErr){
+      console.error("TokenError: ", tokenErr.error);
+      
       return NextResponse.redirect(new URL('/error', request.url));
+    }
 
     const [error, user] = await calClient.getUserInfo()
 
