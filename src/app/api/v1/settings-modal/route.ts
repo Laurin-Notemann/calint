@@ -70,24 +70,10 @@ export async function GET(request: NextRequest) {
 
   const [eventTypesErr, eventTypes] = await calendlyClient.getAllEventTypes();
 
-  if (eventTypesErr)
-    return NextResponse.json({ error: "Could not get Event types" }, { status: 400 })
+  if (eventTypesErr) {
+    console.error("EventType Error", eventTypesErr);
 
-  const leler = {
-    data: {
-      blocks: [
-        {
-          block_key_calendly_event_type: {
-            value: eventTypes[0].name,
-          },
-          block_key_pipedrive_action_types: {
-            value: 1,
-            items: activityTypeNames
-          },
-        },
-      ],
-      actions: {}
-    }
+    return NextResponse.json({ error: "Could not get Event types" + eventTypesErr.error }, { status: 400 })
   }
 
   const responseData: SettingsDataRes = {
