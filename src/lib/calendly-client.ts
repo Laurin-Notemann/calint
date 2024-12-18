@@ -42,6 +42,12 @@ export class CalendlyClient {
   }
 
   async getAllEventTypes() {
+    const [err, _] = await this.refreshAccessToken();
+    if (err)
+      return [{
+        message: "Could not refresh token",
+        error: new Error("could not refresh token") as any
+      }, null] as const
     const options = {
       method: 'GET',
       headers: {
@@ -70,6 +76,12 @@ export class CalendlyClient {
   }
 
   async createWebhookSubscripton(organization: string, user: string) {
+    const [err, _] = await this.refreshAccessToken();
+    if (err)
+      return [{
+        message: "Could not refresh token",
+        error: new Error("could not refresh token") as any
+      }, null] as const
     const body = {
       url: "https://calint.laurinnotemann.dev/api/v1/calendly/webhook",
       events: [
@@ -110,6 +122,12 @@ export class CalendlyClient {
   }
 
   async getAccessToken(code: string) {
+    const [err, _] = await this.refreshAccessToken();
+    if (err)
+      return [{
+        message: "Could not refresh token",
+        error: new Error("could not refresh token") as any
+      }, null] as const
     const body = new URLSearchParams({
       grant_type: "authorization_code",
       code: code,
@@ -145,6 +163,12 @@ export class CalendlyClient {
   }
 
   async getUserInfo(): Promise<Readonly<[CalendlyError, null] | [null, CalendlyGetUserMeRes]>> {
+    const [err, _] = await this.refreshAccessToken();
+    if (err)
+      return [{
+        message: "Could not refresh token",
+        error: new Error("could not refresh token") as any
+      }, null] as const
     try {
       const res = await fetch("https://api.calendly.com/users/me", {
         headers: {
