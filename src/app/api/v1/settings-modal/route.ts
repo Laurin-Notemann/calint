@@ -24,11 +24,11 @@ interface ActivityTypesResponse {
 }
 
 export async function GET(request: NextRequest) {
-  console.log(request)
-
   const stringUserId = request.nextUrl.searchParams.get("userId")
   if (!stringUserId)
     return NextResponse.json({ error: "No UserID" }, { status: 400 })
+
+  console.log("test")
 
   const userId = parseInt(stringUserId)
 
@@ -36,15 +36,19 @@ export async function GET(request: NextRequest) {
   if (getUserErr) {
     return NextResponse.json({ error: getUserErr.message }, { status: 400 })
   }
+  console.log("test1")
 
   const pipedriveClient = initAPIClient({ accessToken: user.accessToken, refreshToken: user.refreshToken })
+  console.log("test2")
 
   const apiInstance = new ActivityTypesApi(pipedriveClient)
+  console.log("test3")
 
   let data: ActivityType[];
   try {
 
     const res: ActivityTypesResponse = await apiInstance.getActivityTypes()
+    console.log("test4")
     data = res.data
 
   } catch (error) {
@@ -59,6 +63,7 @@ export async function GET(request: NextRequest) {
       value: index + 1
     }
   })
+  console.log("test5")
 
   const leler = {
     data: {
