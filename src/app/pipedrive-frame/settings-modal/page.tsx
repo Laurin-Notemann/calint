@@ -5,6 +5,7 @@ import AppExtensionsSDK, { Command, Modal } from '@pipedrive/app-extensions-sdk'
 import { useSearchParams } from 'next/navigation';
 import { SettingsDataRes } from '@/app/api/v1/settings-modal/route';
 
+export const dynamic = 'force-dynamic';
 
 export default function PipedriveFrame() {
   const searchParams = useSearchParams();
