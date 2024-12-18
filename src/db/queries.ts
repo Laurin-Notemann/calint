@@ -9,6 +9,28 @@ export class DatabaseQueries {
   constructor() {
   }
 
+  async getUser(userId: number): PromiseReturn<User> {
+    try {
+      const user = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, userId))
+
+      if (user.length !== 1)
+        return [{
+          message: "No user found",
+          error: new Error("No user found")
+        }, null] as const
+
+      return [null, user[0]] as const
+    } catch (error) {
+      return [{
+        message: "Database error trying to find user",
+        error
+      }, null] as const;
+    }
+  }
+
   async getCompany(companyDomain: string): PromiseReturn<Company> {
     try {
       const company = await db

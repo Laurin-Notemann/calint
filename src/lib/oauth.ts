@@ -1,10 +1,6 @@
-import { cookies } from 'next/headers';
-// @ts-expect-error because
+// @ts-expect-error because pipedrive sucks
 import { ApiClient, UsersApi } from 'pipedrive';
-import db from '@/db/db';
 import logger from '@/utils/logger';
-import { users } from '@/db/schema';
-import { eq } from 'drizzle-orm';
 import { env } from './env';
 
 const log = logger('OAuth 🔒');

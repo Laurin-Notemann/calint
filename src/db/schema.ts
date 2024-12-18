@@ -24,10 +24,10 @@ export const calendlyAcc = pgTable("calendly_acc", {
 //Based on Pipedrive id and username
 export const users = pgTable("users", {
   id: integer('id').primaryKey(),
-  name: text('name'), // uses pipedrive name
-  refreshToken: text('refresh_token'),
-  accessToken: text('access_token'),
-  expiresAt: timestamp('expires_at'),
+  name: text('name').notNull(), // uses pipedrive name
+  refreshToken: text('refresh_token').notNull(),
+  accessToken: text('access_token').notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
   companyId: uuid("company_id").notNull().references(() => companies.id, {
     onDelete: "cascade"
   })
