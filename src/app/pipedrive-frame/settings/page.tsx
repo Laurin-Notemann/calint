@@ -1,7 +1,7 @@
 'use client';  // This is required since we need interactivity【2-5】
 
 import { useEffect } from 'react';
-import AppExtensionsSDK from '@pipedrive/app-extensions-sdk';
+import AppExtensionsSDK, { Command, Modal } from '@pipedrive/app-extensions-sdk';
 
 export default function PipedriveFrame() {
   useEffect(() => {
@@ -12,6 +12,10 @@ export default function PipedriveFrame() {
         // You can access Pipedrive context here
         const settings = sdk.userSettings;
         console.log('Pipedrive context:', settings);
+        const { status } = sdk.execute(Command.OPEN_MODAL, {
+          type: Modal.JSON_MODAL,
+          action_id: "test panel"
+        })
       } catch (error) {
         console.error('Failed to initialize Pipedrive SDK:', error);
       }
