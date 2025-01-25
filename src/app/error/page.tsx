@@ -1,6 +1,7 @@
+'use server'
 import { headers } from 'next/headers';
 
-export default function ErrorPage() {
+export default async function ErrorPage() {
   const headersList = headers();
   const errorMsg = headersList.get('error-msg');
 
