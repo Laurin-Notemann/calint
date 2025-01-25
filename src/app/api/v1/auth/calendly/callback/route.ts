@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
     const [webhookError, res] = await calClient.createWebhookSubscription(user.resource.current_organization, user.resource.uri);
     if (webhookError) {
       console.error("WebhookError", webhookError.error);
-      if (webhookError.error.title === "") {
+      if (webhookError.error.message === "Please upgrade your Calendly account to Standard") {
         const response = NextResponse.redirect(new URL('/error', request.url));
         response.headers.set("error-msg", "Your Calendly account needs at least a Standard subscription in order do create a webhook");
         console.log("Response", response)
