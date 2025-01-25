@@ -1,12 +1,12 @@
 'use server'
-import { headers } from 'next/headers';
 
-export default async function ErrorPage() {
-  const headersList = headers();
-  const errorMsg = headersList.get('error-msg');
-
-  console.log('Error: ', errorMsg)
-  console.log('headers: ', headersList)
+export default async function ErrorPage({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | string[] | undefined };
+}) {
+  const errorMsg = searchParams['error-msg'];
+  console.log('Error from params:', errorMsg);
 
   return (
     <div>
@@ -14,4 +14,3 @@ export default async function ErrorPage() {
     </div>
   );
 }
-

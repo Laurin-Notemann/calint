@@ -73,10 +73,9 @@ export async function GET(request: NextRequest) {
     if (webhookError) {
       console.error("WebhookError", webhookError.error);
       if (webhookError.error.message === "Please upgrade your Calendly account to Standard") {
-        const response = NextResponse.redirect(new URL('/error', request.url));
-        response.headers.set("error-msg", "Your Calendly account needs at least a Standard subscription in order do create a webhook");
-        console.log("Response", response)
-        return response;
+        const errorUrl = new URL('/error', request.url);
+        errorUrl.searchParams.set('error-msg', "Your message");
+        return NextResponse.redirect(errorUrl);
       }
 
       if (webhookError.error.title !== "Already Exists")
