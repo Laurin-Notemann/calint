@@ -5,6 +5,7 @@ export default function ErrorPage() {
   const errorMsg = headersList.get('error-msg');
 
   console.log('Error: ', errorMsg)
+  console.log('headers: ', headersList)
 
   return (
     <div>
