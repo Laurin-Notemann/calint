@@ -75,6 +75,7 @@ export async function GET(request: NextRequest) {
       if (webhookError.error.title === "") {
         const response = NextResponse.redirect(new URL('/error', request.url));
         response.headers.set("error-msg", "Your Calendly account needs at least a Standard subscription in order do create a webhook");
+        console.log("Response", response)
         return response;
       }
 
