@@ -92,7 +92,7 @@ export class CalendlyClient {
 
   }
 
-  async createWebhookSubscripton(organization: string, user: string) {
+  async createWebhookSubscription(organization: string, user: string) {
     const [err, _] = await this.refreshAccessToken();
     if (err)
       return [{

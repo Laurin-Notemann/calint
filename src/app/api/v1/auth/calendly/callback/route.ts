@@ -23,9 +23,9 @@ export async function GET(request: NextRequest) {
 
     console.log("TOKENS:", token);
 
-    if (tokenErr){
+    if (tokenErr) {
       console.error("TokenError: ", tokenErr.error);
-      
+
       return NextResponse.redirect(new URL('/error', request.url));
     }
 
@@ -69,9 +69,15 @@ export async function GET(request: NextRequest) {
     } else
       return NextResponse.redirect(new URL('/error', request.url));
 
-    const [webhookError, res] = await calClient.createWebhookSubscripton(user.resource.current_organization, user.resource.uri);
+    const [webhookError, res] = await calClient.createWebhookSubscription(user.resource.current_organization, user.resource.uri);
     if (webhookError) {
       console.error("WebhookError", webhookError.error);
+      if (webhookError.error.title === "") {
+        const response = NextResponse.redirect(new URL('/error', request.url));
+        response.headers.set("error-msg", "Your Calendly account needs at least a Standard subscription in order do create a webhook");
+        return response;
+      }
+
       if (webhookError.error.title !== "Already Exists")
         return NextResponse.redirect(new URL('/error', request.url));
     }
