@@ -191,6 +191,7 @@ export class DatabaseQueries {
 
       return [null, true] as const
     } catch (error) {
+      console.error("Login with calendly failed " + error)
       return [{
         message: "Could not login into Calendly",
         error
