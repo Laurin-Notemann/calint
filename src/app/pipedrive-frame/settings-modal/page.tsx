@@ -38,14 +38,44 @@ function PipedriveFrameContent() {
     <div className="p-4">
       {settingData
         ? <div className='flex flex-col gap-2'>{settingData.data.calendlyEventTypes.collection.map((event, index) => (
-          <>
+          <div className='flex flex-row gap-2'>
             <span key={index}>{event.name}</span>
-            <select>
-              {settingData.data.pipedriveAcitvityTypes.map((activity, index) => (
-                <option key={index}>{activity.name}</option>
-              ))}
-            </select>
-          </>
+            <div>
+              <div className='flex gap-2'>
+                <h3>Created</h3>
+                <select>
+                  {settingData.data.pipedriveAcitvityTypes.map((activity, index) => (
+                    <option key={index}>{activity.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className='flex gap-2'>
+                <h3>Rescheduled</h3>
+                <select>
+                  {settingData.data.pipedriveAcitvityTypes.map((activity, index) => (
+                    <option key={index}>{activity.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className='flex gap-2'>
+                <h3>Cancelled</h3>
+                <select>
+                  {settingData.data.pipedriveAcitvityTypes.map((activity, index) => (
+                    <option key={index}>{activity.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className='flex gap-2'>
+                <h3>Noshow</h3>
+                <select>
+                  {settingData.data.pipedriveAcitvityTypes.map((activity, index) => (
+                    <option key={index}>{activity.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
         ))}
         </div>
         : <div>
