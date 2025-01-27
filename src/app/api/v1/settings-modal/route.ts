@@ -4,6 +4,7 @@ import { initAPIClient } from '@/lib/oauth';
 import { NextRequest, NextResponse } from 'next/server';
 // @ts-expect-error because pipedrive sucks
 import { ActivityTypesApi } from "pipedrive"
+import { createLogger, logError } from "@/utils/logger";
 
 
 interface ActivityType {
@@ -24,15 +25,20 @@ interface ActivityTypesResponse {
   data: ActivityType[];
 }
 
+const logger = createLogger('settings-modal');
+
 export async function GET(request: NextRequest) {
   const stringUserId = request.nextUrl.searchParams.get("userId")
-  if (!stringUserId)
+  if (!stringUserId) {
+    logError(logger, new Error('No userId provided in request'));
     return NextResponse.json({ error: "No UserID" }, { status: 400 })
+  }
 
   const userId = parseInt(stringUserId)
 
   const [getUserErr, userCalendly] = await querier.getUserAndCalendlyAcc(userId)
   if (getUserErr) {
+    logError(logger, getUserErr, { context: 'getUserAndCalendlyAcc', userId });
     return NextResponse.json({ error: getUserErr.message }, { status: 400 })
   }
 
@@ -49,8 +55,7 @@ export async function GET(request: NextRequest) {
     data = res.data
 
   } catch (error) {
-    console.error("Getting Activity Types", error);
-
+    logError(logger, error, { context: 'getActivityTypes', userId });
     return NextResponse.json({ error: "Could not get Activity types" }, { status: 400 })
   }
 
@@ -71,9 +76,11 @@ export async function GET(request: NextRequest) {
   const [eventTypesErr, eventTypes] = await calendlyClient.getAllEventTypes();
 
   if (eventTypesErr) {
-    console.error("EventType Error", eventTypesErr.error);
-    console.error("lala", eventTypesErr.error.details);
-
+    logError(logger, eventTypesErr.error, { 
+      context: 'getEventTypes',
+      details: eventTypesErr.error.details,
+      userId 
+    });
     return NextResponse.json({ error: "Could not get Event types" + eventTypesErr.error }, { status: 400 })
   }
 

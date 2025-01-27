@@ -1,9 +1,12 @@
 import { CalendlyUser, querier } from "@/db/queries";
 import { env } from "./env"
 import dayjs from "dayjs";
+import { createLogger, logAPICall, logError } from "@/utils/logger";
+import { logDBError, logDBOperation } from "@/utils/db-logger";
 
 
 export class CalendlyClient {
+  private logger = createLogger('CalendlyClient');
   accessToken: string;
   refreshToken: string;
   constructor({ accessToken, refreshToken }: { accessToken?: string, refreshToken?: string }) {
@@ -12,12 +15,12 @@ export class CalendlyClient {
   }
 
   async refreshAccessToken() {
-    const body = new URLSearchParams({
-      grant_type: "refresh_token",
-      refresh_token: this.refreshToken
-    });
-
     try {
+      const body = new URLSearchParams({
+        grant_type: "refresh_token",
+        refresh_token: this.refreshToken
+      });
+
       const res = await fetch("https://auth.calendly.com/oauth/token", {
         headers: {
           "Authorization": "Basic " + btoa(env.CALENDLY_CLIENT_ID + ":" + env.CALENDLY_CLIENT_SECRET),
@@ -28,30 +31,50 @@ export class CalendlyClient {
       })
 
       const data: GetAccessTokenRes = await res.json();
+      
+      logAPICall(this.logger, {
+        service: 'Calendly',
+        method: 'POST',
+        endpoint: '/oauth/token',
+        status: res.status,
+        statusText: res.statusText,
+        response: data
+      });
 
-      console.log("what the DATA: ", data)
+      if (res.status !== 200) {
+        const errorData = await res.json();
+        logError(this.logger, errorData, {
+          operation: 'refreshAccessToken',
+          status: res.status,
+          statusText: res.statusText
+        });
+        return [{
+          message: "Failed to refresh access token",
+          error: errorData
+        }, null] as const;
+      }
 
-      this.updateCalendlyTokens(data)
-
-      const whatisthisdate =  dayjs().add(data.expires_in, 'second').toDate()
-
-      console.log(whatisthisdate)
+      const expirationDate = dayjs().add(data.expires_in, 'second').toDate()
 
       const credentials = {
         accessToken: data.access_token,
         refreshToken: data.refresh_token,
-        expiresAt: whatisthisdate,
+        expiresAt: expirationDate,
       };
       const [dbErr, _] = await querier.loginWithCalendly(data.owner, credentials)
-      if (dbErr)
-        return [{
-          message: "could not update db creds" + dbErr.message,
-          error: dbErr.error
-        }, null] as const
+      if (dbErr) {
+        logError(this.logger, dbErr, {
+          operation: 'refreshAccessToken',
+          owner: data.owner
+        });
+        return [dbErr, null] as const
+      }
 
       return [null, data] as const
     } catch (error) {
-
+      logError(this.logger, error, {
+        operation: 'refreshAccessToken'
+      });
       return [{
         message: "Could not get auth code",
         error
@@ -67,35 +90,49 @@ export class CalendlyClient {
         message: "Could not refresh token",
         error: new Error("could not refresh token" + err.message) as any
       }, null] as const
-    const options = {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: 'Bearer ' + this.accessToken
-      },
-    };
 
     try {
-      const res = await fetch('https://api.calendly.com/event_types?organization=' + token.organization, options);
+      const res = await fetch('https://api.calendly.com/event_types?organization=' + token.organization, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + this.accessToken
+        },
+      });
+
       const body: CalendlyResponse = await res.json();
+      
+      logAPICall(this.logger, {
+        service: 'Calendly',
+        method: 'GET',
+        endpoint: '/event_types',
+        status: res.status,
+        statusText: res.statusText,
+        response: body
+      });
+
       if (res.status !== 200) {
+        logError(this.logger, body, {
+          operation: 'getAllEventTypes',
+          status: res.status,
+          statusText: res.statusText
+        });
         return [{
           message: "Could not get EventTypes",
           error: body as any
         }, null] as const
       }
-      console.log("event type: ", body);
 
       return [null, body] as const;
     } catch (error) {
-      console.error("Event types error", error);
-
+      logError(this.logger, error, {
+        operation: 'getAllEventTypes'
+      });
       return [{
         message: "Could not get EventTypes",
         error: error as any
       }, null] as const
     }
-
   }
 
   async createWebhookSubscription(organization: string, user: string) {
@@ -105,38 +142,56 @@ export class CalendlyClient {
         message: "Could not refresh token",
         error: new Error("could not refresh token") as any
       }, null] as const
-    const body = {
-      url: "https://calint.laurinnotemann.dev/api/v1/calendly/webhook",
-      events: [
-        "invitee.created",
-        "invitee.canceled",
-        "invitee_no_show.created",
-        "invitee_no_show.deleted"
-      ],
-      organization,
-      user,
-      scope: "organization",
-    }
-    const options = {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: 'Bearer ' + this.accessToken
-      },
-      body: JSON.stringify(body)
-    };
 
     try {
-      const res = await fetch('https://api.calendly.com/webhook_subscriptions', options);
+      const res = await fetch('https://api.calendly.com/webhook_subscriptions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + this.accessToken
+        },
+        body: JSON.stringify({
+          url: "https://calint.laurinnotemann.dev/api/v1/calendly/webhook",
+          events: [
+            "invitee.created",
+            "invitee.canceled",
+            "invitee_no_show.created",
+            "invitee_no_show.deleted"
+          ],
+          organization,
+          user,
+          scope: "organization",
+        })
+      });
+
       const body: CalendlyWebhookSubscription = await res.json();
+      
+      logAPICall(this.logger, {
+        service: 'Calendly',
+        method: 'POST',
+        endpoint: '/webhook_subscriptions',
+        status: res.status,
+        statusText: res.statusText,
+        response: body
+      });
+
       if (res.status !== 201) {
+        logError(this.logger, body, {
+          operation: 'createWebhookSubscription',
+          status: res.status,
+          statusText: res.statusText
+        });
         return [{
           message: "Could not create webhook",
           error: body as any
         }, null] as const
       }
+
       return [null, body] as const;
     } catch (error) {
+      logError(this.logger, error, {
+        operation: 'createWebhookSubscription'
+      });
       return [{
         message: "Could not create webhook_subscriptions",
         error: error as any
@@ -145,11 +200,6 @@ export class CalendlyClient {
   }
 
   async getAccessToken(code: string) {
-    const body = new URLSearchParams({
-      grant_type: "authorization_code",
-      code: code,
-      redirect_uri: env.CALENDLY_REDIRECT_URL
-    });
     try {
       const res = await fetch("https://auth.calendly.com/oauth/token", {
         headers: {
@@ -157,16 +207,42 @@ export class CalendlyClient {
           "Content-Type": "application/x-www-form-urlencoded"
         },
         method: "POST",
-        body: body,
-      })
+        body: new URLSearchParams({
+          grant_type: "authorization_code",
+          code: code,
+          redirect_uri: env.CALENDLY_REDIRECT_URL
+        }),
+      });
 
       const data: GetAccessTokenRes = await res.json();
+      
+      logAPICall(this.logger, {
+        service: 'Calendly',
+        method: 'POST',
+        endpoint: '/oauth/token',
+        status: res.status,
+        statusText: res.statusText,
+        response: data
+      });
+
+      if (res.status !== 200) {
+        logError(this.logger, data, {
+          operation: 'getAccessToken',
+          status: res.status,
+          statusText: res.statusText
+        });
+        return [{
+          message: "Failed to get access token",
+          error: data
+        }, null] as const;
+      }
 
       this.updateCalendlyTokens(data)
-
       return [null, data] as const
     } catch (error) {
-
+      logError(this.logger, error, {
+        operation: 'getAccessToken'
+      });
       return [{
         message: "Could not get auth code",
         error
@@ -186,16 +262,42 @@ export class CalendlyClient {
         message: "Could not refresh token",
         error: new Error("could not refresh token") as any
       }, null] as const
+
     try {
       const res = await fetch("https://api.calendly.com/users/me", {
         headers: {
           "Authorization": "Bearer " + this.accessToken
         }
-      })
+      });
 
-      const data: CalendlyGetUserMeRes = await res.json()
+      const data: CalendlyGetUserMeRes = await res.json();
+      
+      logAPICall(this.logger, {
+        service: 'Calendly',
+        method: 'GET',
+        endpoint: '/users/me',
+        status: res.status,
+        statusText: res.statusText,
+        response: data
+      });
+
+      if (res.status !== 200) {
+        logError(this.logger, data, {
+          operation: 'getUserInfo',
+          status: res.status,
+          statusText: res.statusText
+        });
+        return [{
+          message: "Failed to get user info",
+          error: data
+        }, null] as const;
+      }
+
       return [null, data] as const
     } catch (error) {
+      logError(this.logger, error, {
+        operation: 'getUserInfo'
+      });
       return [{
         message: "could not get user info",
         error
