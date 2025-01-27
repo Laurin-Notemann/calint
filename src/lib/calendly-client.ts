@@ -29,6 +29,8 @@ export class CalendlyClient {
 
       const data: GetAccessTokenRes = await res.json();
 
+      console.log("what the DATA: ", data)
+
       this.updateCalendlyTokens(data)
 
       const whatisthisdate =  dayjs().add(data.expires_in, 'second').toDate()
