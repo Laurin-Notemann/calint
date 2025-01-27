@@ -187,7 +187,22 @@ export class DatabaseQueries {
 
   async loginWithCalendly(calendlyUri: string, creds: AccountLogin) {
     try {
-      await db.update(calendlyAcc).set(creds).where(eq(calendlyAcc.uri, calendlyUri))
+      console.log('Expires at:', creds.expiresAt);
+
+      const formattedCreds = {
+        ...creds,
+        expiresAt: new Date(creds.expiresAt)
+      }
+
+      // Add validation
+      if (isNaN(formattedCreds.expiresAt.getTime())) {
+        throw new Error('Invalid expiration date');
+      }
+
+      await db.update(calendlyAcc)
+        .set(formattedCreds)
+        .where(eq(calendlyAcc.uri, calendlyUri));
+
 
       return [null, true] as const
     } catch (error) {
