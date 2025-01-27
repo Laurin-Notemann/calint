@@ -3,6 +3,8 @@
 import { useEffect } from 'react';
 import AppExtensionsSDK, { Command, Modal } from '@pipedrive/app-extensions-sdk';
 
+export const dynamic = 'force-dynamic';
+
 export default function PipedriveFrame() {
   useEffect(() => {
     // Initialize Pipedrive SDK
@@ -10,13 +12,13 @@ export default function PipedriveFrame() {
       try {
         const sdk = await new AppExtensionsSDK().initialize();
         // You can access Pipedrive context here
-        const settings = sdk.userSettings;
-        console.log('Pipedrive context:', settings);
-        const { status } = await sdk.execute(Command.OPEN_MODAL, {
-          type: Modal.JSON_MODAL,
-          action_id: "Calint Settings"
-        })
-        console.log('status', settings);
+        //const settings = sdk.userSettings;
+        //console.log('Pipedrive context:', settings);
+        //const { status } = await sdk.execute(Command.OPEN_MODAL, {
+        //  type: Modal.JSON_MODAL,
+        //  action_id: "Calint Settings"
+        //})
+        //console.log('status', settings);
       } catch (error) {
         console.error('Failed to initialize Pipedrive SDK:', error);
       }
