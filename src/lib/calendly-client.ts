@@ -31,10 +31,14 @@ export class CalendlyClient {
 
       this.updateCalendlyTokens(data)
 
+      const whatisthisdate =  dayjs().add(data.expires_in, 'second').toDate()
+
+      console.log(whatisthisdate)
+
       const credentials = {
         accessToken: data.access_token,
         refreshToken: data.refresh_token,
-        expiresAt: dayjs().add(data.expires_in, 'second').toDate(),
+        expiresAt: whatisthisdate,
       };
       const [dbErr, _] = await querier.loginWithCalendly(data.owner, credentials)
       if (dbErr)
