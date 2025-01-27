@@ -59,7 +59,7 @@ export class CalendlyClient {
     if (err)
       return [{
         message: "Could not refresh token",
-        error: new Error("could not refresh token") as any
+        error: new Error("could not refresh token" + err.message) as any
       }, null] as const
     const options = {
       method: 'GET',
