@@ -1,9 +1,7 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, Suspense } from "react";
 import AppExtensionsSDK, {
-  Command,
-  Modal,
 } from "@pipedrive/app-extensions-sdk";
 import { useSearchParams } from "next/navigation";
 import { SettingsDataRes } from "@/app/api/v1/settings-modal/route";
@@ -43,7 +41,7 @@ function PipedriveFrameContent() {
 
   if (error) return <div>Could not get Calendly or Pipedrive information {error.message}</div>;
 
-  if (isLoading) return <div>Currently calendly and Pipedrive data</div>;
+  if (isLoading) return <div>Currently fetching Calendly and Pipedrive data</div>;
 
   return (
     <div className="p-4">

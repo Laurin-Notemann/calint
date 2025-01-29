@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import './iframe.css'; 
 
 export const metadata: Metadata = {
   title: "Pipedrive Integration",
