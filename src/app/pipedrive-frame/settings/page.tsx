@@ -1,9 +1,12 @@
-'use client';  // This is required since we need interactivity【2-5】
+"use client"; // This is required since we need interactivity【2-5】
 
-import { useEffect } from 'react';
-import AppExtensionsSDK, { Command, Modal } from '@pipedrive/app-extensions-sdk';
+import { useEffect } from "react";
+import AppExtensionsSDK, {
+  Command,
+  Modal,
+} from "@pipedrive/app-extensions-sdk";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export default function PipedriveFrame() {
   useEffect(() => {
@@ -20,7 +23,7 @@ export default function PipedriveFrame() {
         //})
         //console.log('status', settings);
       } catch (error) {
-        console.error('Failed to initialize Pipedrive SDK:', error);
+        console.error("Failed to initialize Pipedrive SDK:", error);
       }
     };
 
@@ -35,4 +38,3 @@ export default function PipedriveFrame() {
     </div>
   );
 }
-

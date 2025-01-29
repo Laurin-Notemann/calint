@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   //  // Get the Authorization header
@@ -33,13 +33,12 @@ export async function GET(request: NextRequest) {
   //    });
   //  }
 
-
   const lala = {
-    "data": {
-      "id": "leo stinkt",
-      "header": "Hello",
-    }
-  }
+    data: {
+      id: "leo stinkt",
+      header: "Hello",
+    },
+  };
 
   return NextResponse.json(lala);
 }

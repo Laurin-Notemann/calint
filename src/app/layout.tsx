@@ -1,8 +1,9 @@
-import './globals.css';
+import ReactQueryProvider from "@/components/ReactQueryProvider";
+import "./globals.css";
 
 export const metadata = {
-  title: 'Floating Window Demo App',
-  description: 'Demo app for Pipedrive floating window',
+  title: "Floating Window Demo App",
+  description: "Demo app for Pipedrive floating window",
 };
 
 export default function RootLayout({
@@ -13,8 +14,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-          {children}
+        <ReactQueryProvider>{children}</ReactQueryProvider>
       </body>
     </html>
   );
-} 
+}

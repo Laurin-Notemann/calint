@@ -8,7 +8,7 @@ interface Session {
 interface CallerDetails {
   number?: string;
   id?: string;
-  direction: 'in' | 'out';
+  direction: "in" | "out";
   existing: boolean;
 }
 
@@ -31,4 +31,4 @@ interface AppContextState {
   setMissedCall: (count: number) => void;
 }
 
-export type { Session, CallerDetails, User, AppContextState }; 
+export type { Session, CallerDetails, User, AppContextState };

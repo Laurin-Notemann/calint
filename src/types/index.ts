@@ -10,7 +10,7 @@ export interface CallerDetails {
   name?: string;
   number?: string;
   picture?: string;
-  direction?: 'in' | 'out';
+  direction?: "in" | "out";
   existing?: boolean;
   relatedDeals?: Deal[];
 }
@@ -26,16 +26,18 @@ export interface Contact {
   contactId: string;
   contactName: string;
   contactNumber: string;
-  direction: 'in' | 'out';
+  direction: "in" | "out";
 }
 
 export interface AppContextType {
   user: User;
   setUser: (user: User) => void;
-  callerState: 'listening' | 'ringing' | 'connected' | 'disconnected';
-  setCallerState: (state: 'listening' | 'ringing' | 'connected' | 'disconnected') => void;
+  callerState: "listening" | "ringing" | "connected" | "disconnected";
+  setCallerState: (
+    state: "listening" | "ringing" | "connected" | "disconnected",
+  ) => void;
   callerDetails: CallerDetails;
   setCallerDetails: (details: CallerDetails) => void;
   missedCall: number;
   setMissedCall: (count: number) => void;
-} 
+}

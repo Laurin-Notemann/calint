@@ -1,5 +1,3 @@
 export class PipedriveClient {
-  constructor() {
-
-  }
+  constructor() {}
 }

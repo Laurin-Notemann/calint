@@ -1,8 +1,8 @@
-import type { Metadata } from 'next';
+import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: 'Pipedrive Integration',
-  description: 'Custom Pipedrive integration iframe'
+  title: "Pipedrive Integration",
+  description: "Custom Pipedrive integration iframe",
 };
 
 export default function PipedriveFrameLayout({
@@ -16,4 +16,3 @@ export default function PipedriveFrameLayout({
     </html>
   );
 }
-

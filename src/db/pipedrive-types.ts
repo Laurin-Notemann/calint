@@ -24,15 +24,15 @@ export type BaseUserMe = {
   company_domain: string;
   company_country: string;
   language: BaseUserMeLanguage;
-}
+};
 
 export type UserAccess = {
   app: string;
   admin: boolean;
   permission_set_id: string;
-}
+};
 
 export type BaseUserMeLanguage = {
   language_code: string;
   country_code: string;
-}
+};

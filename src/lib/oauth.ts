@@ -1,9 +1,9 @@
 // @ts-expect-error because pipedrive sucks
-import { ApiClient, UsersApi } from 'pipedrive';
-import logger from '@/utils/logger';
-import { env } from './env';
+import { ApiClient, UsersApi } from "pipedrive";
+import logger from "@/utils/logger";
+import { env } from "./env";
 
-const log = logger('OAuth 🔒');
+const log = logger("OAuth 🔒");
 
 interface APIClientConfig {
   accessToken?: string;
@@ -19,12 +19,15 @@ interface TokenResponse {
 interface SessionData {
   auth: boolean;
   id?: string;
-  name?: string,
-  token?: string,
+  name?: string;
+  token?: string;
 }
 
 // Initialize the API client
-export const initAPIClient = ({ accessToken = '', refreshToken = '' }: APIClientConfig): ApiClient => {
+export const initAPIClient = ({
+  accessToken = "",
+  refreshToken = "",
+}: APIClientConfig): ApiClient => {
   const client = new ApiClient();
   const oAuth2 = client.authentications.oauth2;
 
@@ -40,7 +43,7 @@ export const initAPIClient = ({ accessToken = '', refreshToken = '' }: APIClient
 // Generate the authorization URL for the 1st step
 export const getAuthorizationUrl = (client: ApiClient): string => {
   const authUrl = client.buildAuthorizationUrl();
-  log.info('Authorization URL generated');
+  log.info("Authorization URL generated");
   return authUrl;
 };
 
@@ -48,13 +51,13 @@ export const getAuthorizationUrl = (client: ApiClient): string => {
 export const getLoggedInUser = async (client: ApiClient) => {
   const api = new UsersApi(client);
   const data = await api.getCurrentUser();
-  log.info('Currently logged-in user details obtained');
+  log.info("Currently logged-in user details obtained");
   return data;
 };
 
 // Update Access and Refresh tokens
 export const updateTokens = (client: ApiClient, token: TokenResponse): void => {
-  log.info('Updating access + refresh token details');
+  log.info("Updating access + refresh token details");
   const oAuth2 = client.authentications.oauth2;
   oAuth2.accessToken = token.access_token;
   oAuth2.refreshToken = token.refresh_token;
@@ -112,7 +115,7 @@ export const updateTokens = (client: ApiClient, token: TokenResponse): void => {
 //        account.accountId,
 //        account.name,
 //        account.accessToken,
-//        account.expiresAt 
+//        account.expiresAt
 //      );
 //    }
 //
@@ -148,4 +151,4 @@ export const updateTokens = (client: ApiClient, token: TokenResponse): void => {
 //  });
 //
 //  return newSession;
-//}; 
+//};
