@@ -112,11 +112,12 @@ export async function GET(request: NextRequest) {
 
   if (addEventTypesErr) {
     logError(logger, addEventTypesErr.error, {
-      context: "getEventTypes",
+      context: "addEventTypes",
+      details: addEventTypesErr.error.details,
       userId,
     });
     return NextResponse.json(
-      { error: "Could not get Event types" + addEventTypesErr.error },
+      { error: "Could not add Event types" + addEventTypesErr.error },
       { status: 400 },
     );
   }

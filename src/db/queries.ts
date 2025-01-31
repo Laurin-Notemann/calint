@@ -51,7 +51,7 @@ export class DatabaseQueries {
       return [
         {
           message: "Database error trying insert all eventTypes",
-          error,
+          error: error as any,
         },
         null,
       ] as const;

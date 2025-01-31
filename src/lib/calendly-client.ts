@@ -58,7 +58,7 @@ export class CalendlyClient {
         return [
           {
             message: "Failed to refresh access token",
-            error: errorData,
+            error: errorData as any,
           },
           null,
         ] as const;
