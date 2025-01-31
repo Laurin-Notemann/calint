@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./iframe.css";
+import ThemeProvider from "@/components/ThemeProvider";
 
 export const metadata: Metadata = {
   title: "Pipedrive Integration",
@@ -13,7 +14,9 @@ export default function PipedriveFrameLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <ThemeProvider>{children}</ThemeProvider>
+      </body>
     </html>
   );
 }

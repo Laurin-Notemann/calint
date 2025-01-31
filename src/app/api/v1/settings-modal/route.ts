@@ -10,7 +10,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ActivityTypesApi } from "pipedrive";
 import { createLogger, logError } from "@/utils/logger";
 
-interface ActivityType {
+export interface ActivityType {
   id: number;
   order_nr: number;
   name: string;
@@ -94,6 +94,8 @@ export async function GET(request: NextRequest) {
       { status: 400 },
     );
   }
+
+  console.log(eventTypes);
 
   const responseData: SettingsDataRes = {
     data: {

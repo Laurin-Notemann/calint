@@ -12,6 +12,7 @@ export const companies = pgTable("companies", {
   id: uuid("id").primaryKey().defaultRandom().notNull(),
   name: text("name"),
   domain: text("domain").notNull().unique(),
+  calendlyOrg: text("calendly_org"),
 });
 
 export const calendlyAcc = pgTable("calendly_acc", {

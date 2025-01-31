@@ -1,26 +1,30 @@
 "use client";
 
 import { useEffect, Suspense } from "react";
-import AppExtensionsSDK, {
-} from "@pipedrive/app-extensions-sdk";
+import AppExtensionsSDK from "@pipedrive/app-extensions-sdk";
 import { useSearchParams } from "next/navigation";
 import { SettingsDataRes } from "@/app/api/v1/settings-modal/route";
 import { useQuery } from "@tanstack/react-query";
+import SetupFrame from "@/components/SetupFrame";
 
 export const dynamic = "force-dynamic";
 
 function PipedriveFrameContent() {
   const searchParams = useSearchParams();
-  const { isLoading, error, data: settingsData } = useQuery({
+  const {
+    isLoading,
+    error,
+    data: settingsData,
+  } = useQuery({
     queryKey: ["settingsData"],
     queryFn: async (): Promise<SettingsDataRes> => {
       const res = await fetch(
         "https://calint.laurinnotemann.dev/api/v1/settings-modal?userId=" +
-        searchParams.get("userId"),
+          searchParams.get("userId"),
       );
 
-      return res.json()
-    }
+      return res.json();
+    },
   });
 
   useEffect(() => {
@@ -39,69 +43,15 @@ function PipedriveFrameContent() {
     initializePipedrive();
   }, [searchParams]);
 
-  if (error) return <div>Could not get Calendly or Pipedrive information {error.message}</div>;
+  if (error)
+    return (
+      <div>Could not get Calendly or Pipedrive information {error.message}</div>
+    );
 
-  if (isLoading) return <div>Currently fetching Calendly and Pipedrive data</div>;
+  if (isLoading)
+    return <div>Currently fetching Calendly and Pipedrive data</div>;
 
-  return (
-    <div className="p-4">
-      {settingsData ? (
-        <div>
-          {settingsData.data.calendlyEventTypes.collection.map(
-            (event, index) => (
-              <div className="flex flex-row gap-2" key={index}>
-                <span key={index}>{event.name}</span>
-                <div>
-                  <div className="flex gap-2">
-                    <h3>Created</h3>
-                    <select>
-                      {settingsData.data.pipedriveAcitvityTypes.map(
-                        (activity, index) => (
-                          <option key={index}>{activity.name}</option>
-                        ),
-                      )}
-                    </select>
-                  </div>
-                  <div className="flex gap-2">
-                    <h3>Rescheduled</h3>
-                    <select>
-                      {settingsData.data.pipedriveAcitvityTypes.map(
-                        (activity, index) => (
-                          <option key={index}>{activity.name}</option>
-                        ),
-                      )}
-                    </select>
-                  </div>
-                  <div className="flex gap-2">
-                    <h3>Cancelled</h3>
-                    <select>
-                      {settingsData.data.pipedriveAcitvityTypes.map(
-                        (activity, index) => (
-                          <option key={index}>{activity.name}</option>
-                        ),
-                      )}
-                    </select>
-                  </div>
-                  <div className="flex gap-2">
-                    <h3>Noshow</h3>
-                    <select>
-                      {settingsData.data.pipedriveAcitvityTypes.map(
-                        (activity, index) => (
-                          <option key={index}>{activity.name}</option>
-                        ),
-                      )}
-                    </select>
-                  </div>
-                </div>
-              </div>
-            ),
-          )}
-        </div>
-      ) : (
-        <div>Error</div>
-      )}
-    </div>
-  );
+  return <SetupFrame settingsData={settingsData} />;
 }
 
 export default function PipedriveFrame() {

@@ -191,6 +191,34 @@ export class DatabaseQueries {
     }
   }
 
+  async updateCompany(company: Company): PromiseReturn<Company> {
+    try {
+      logDBOperation("updateCompany", { company });
+      const [err, updatedCompany] = await db
+        .update(companies)
+        .set(company)
+        .where(eq(companies.id, company.id));
+
+      if (err) {
+        logDBError("updateCompany", err, {
+          company,
+        });
+        return [err, null];
+      }
+
+      return [null, updatedCompany] as const;
+    } catch (error) {
+      logDBError("updateCompany", error, { company });
+      return [
+        {
+          message: "Database error when trying to update company",
+          error,
+        },
+        null,
+      ] as const;
+    }
+  }
+
   async createUser(
     user: BaseUserMe,
     { accessToken, refreshToken, expiresAt }: AccountLogin,
