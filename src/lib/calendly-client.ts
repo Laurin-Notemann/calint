@@ -112,7 +112,7 @@ export class CalendlyClient {
     try {
       const res = await fetch(
         "https://api.calendly.com/event_types?organization=" +
-          token.organization,
+          token.organization + "&count=100",
         {
           method: "GET",
           headers: {

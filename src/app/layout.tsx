@@ -2,8 +2,8 @@ import ReactQueryProvider from "@/components/ReactQueryProvider";
 import "./globals.css";
 
 export const metadata = {
-  title: "Floating Window Demo App",
-  description: "Demo app for Pipedrive floating window",
+  title: "Calint",
+  description: "",
 };
 
 export default function RootLayout({
