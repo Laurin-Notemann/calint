@@ -76,7 +76,7 @@ export const pipedriveActivities = pgTable("pipedrive_activities", {
 export const calEventTypes = pgTable("cal_event_types", {
   id: uuid("id").primaryKey().defaultRandom().notNull(),
   name: text("name").notNull(),
-  uri: text("slug").notNull().unique(),
+  uri: text("uri").notNull().unique(),
   slug: text("slug").notNull(),
   scheduleUri: text("schedule_uri").notNull(),
   calUserUri: text("cal_user_uri").notNull(), // this is not a foreign key to calendlyAccs, because calendlyAccs are only accs that have already created an acc
