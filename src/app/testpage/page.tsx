@@ -89,7 +89,7 @@ const settingsData: SettingsDataRes = {
           locations: [
             {
               kind: "google_meet",
-              phone_number: null,
+              phone_number: 1,
               additional_info: "Google Meet link will be provided",
             },
           ],
@@ -125,7 +125,7 @@ const settingsData: SettingsDataRes = {
           locations: [
             {
               kind: "zoom",
-              phone_number: null,
+              phone_number: 1,
               additional_info: "Zoom link will be provided",
             },
           ],
@@ -171,7 +171,7 @@ const settingsData: SettingsDataRes = {
           locations: [
             {
               kind: "microsoft_teams",
-              phone_number: null,
+              phone_number: 1,
               additional_info: "Teams link will be provided",
             },
           ],
@@ -217,7 +217,7 @@ const settingsData: SettingsDataRes = {
           locations: [
             {
               kind: "zoom",
-              phone_number: null,
+              phone_number: 1,
               additional_info: "Zoom link will be provided",
             },
           ],
