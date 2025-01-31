@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 // @ts-expect-error because pipedrive sucks
 import { ActivityTypesApi } from "pipedrive";
 import { createLogger, logError } from "@/utils/logger";
-import { NewCalEventType } from "@/db/schema";
+import { NewCalEventType, NewPipedriveActivityType } from "@/db/schema";
 
 export interface ActivityType {
   id: number;
@@ -68,12 +68,6 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const activityTypeNames = data.map((activityType, index) => {
-    return {
-      label: activityType.name,
-      value: index + 1,
-    };
-  });
 
   const calendlyAcc = userCalendly.calendly_accs;
 
@@ -123,7 +117,30 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  const dbActivityTypes: NewPipedriveActivityType[] = data.map((activityType) => {
+    return {
+      name: activityType.name,
+      pipedriveId: activityType.id,
+      companyId: user.companyId
+    };
+  });
+
+  const [addActivityTypesErr, __] = await querier.addAllActivityTypes(dbActivityTypes)
+
+  if (addActivityTypesErr) {
+    logError(logger, addActivityTypesErr.error, {
+      context: "addActivityTypes",
+      details: addActivityTypesErr.error.details,
+      userId,
+    });
+    return NextResponse.json(
+      { error: "Could not add Activity types" + addActivityTypesErr.error },
+      { status: 400 },
+    );
+  }
+
   console.log(JSON.stringify(eventTypes));
+  console.log(JSON.stringify(data));
 
   const responseData: SettingsDataRes = {
     data: {

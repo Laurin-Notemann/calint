@@ -90,6 +90,13 @@ export const calEventTypes = pgTable("cal_event_types", {
 
 export const pipedriveActivityTypes = pgTable("pipedrive_activity_types", {
   id: uuid("id").primaryKey().defaultRandom().notNull(),
+  name: text("name").notNull(),
+  pipedriveId: integer("pipedrive_id").notNull().unique(),
+  companyId: uuid("company_id")
+    .notNull()
+    .references(() => companies.id, {
+      onDelete: "cascade",
+    }),
 });
 
 export type Company = typeof companies.$inferSelect;
@@ -105,3 +112,6 @@ export type UserCalendly = {
 
 export type CalEventType = typeof calEventTypes.$inferSelect
 export type NewCalEventType = typeof calEventTypes.$inferInsert
+
+export type PipedriveActivityType = typeof pipedriveActivityTypes.$inferSelect
+export type NewPipedriveActivityType = typeof pipedriveActivityTypes.$inferInsert

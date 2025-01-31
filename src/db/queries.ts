@@ -8,6 +8,8 @@ import {
   Company,
   NewCalEventType,
   NewCompany,
+  NewPipedriveActivityType,
+  pipedriveActivityTypes,
   User,
   UserCalendly,
   users,
@@ -90,6 +92,73 @@ export class DatabaseQueries {
     }
   }
 
+  async addAllActivityTypes(activityTypes: NewPipedriveActivityType[]) {
+    try {
+      logDBOperation("addAllActivityTypes", { activityTypes });
+
+      const [checkError, result] = await this.checkExistingActivityTypes(activityTypes);
+
+      if (checkError) {
+        return [checkError, null] as const;
+      }
+
+      if (!result.new.length) {
+        return [null, {
+          message: "All activity types already exist",
+          added: 0
+        }] as const;
+      }
+
+      await db.insert(pipedriveActivityTypes).values(result.new);
+
+      return [null, {
+        message: "Successfully added new activity types",
+        added: result.new.length,
+        skipped: result.existing.length
+      }] as const;
+    } catch (error) {
+      logDBError("addAllActivityTypes", error, { activityTypes });
+      return [
+        {
+          message: "Database error trying insert all activityTypes",
+          error: error as any,
+        },
+        null,
+      ] as const;
+    }
+  }
+
+  async checkExistingActivityTypes(activityTypes: NewPipedriveActivityType[]) {
+    try {
+      logDBOperation("checkExistingActivityTypes", { activityTypes });
+
+      const existingTypes = await db
+        .select()
+        .from(pipedriveActivityTypes)
+        .where(
+          inArray(
+            pipedriveActivityTypes.pipedriveId,
+            activityTypes.map(at => at.pipedriveId)
+          )
+        );
+
+      const existingIds = new Set(existingTypes.map(at => at.pipedriveId));
+      const newActivityTypes = activityTypes.filter(at => !existingIds.has(at.pipedriveId));
+
+      return [null, {
+        existing: existingTypes,
+        new: newActivityTypes,
+        hasConflicts: existingTypes.length > 0
+      }] as const;
+
+    } catch (error) {
+      logDBError("checkExistingActivityTypes", error, { activityTypes });
+      return [{
+        message: "Database error checking existing activityTypes",
+        error,
+      }, null] as const;
+    }
+  }
 
   async getUser(userId: number): PromiseReturn<User> {
     try {
