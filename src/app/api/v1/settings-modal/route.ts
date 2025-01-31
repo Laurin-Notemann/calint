@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  console.log(eventTypes);
+  console.log(JSON.stringify(eventTypes));
 
   const responseData: SettingsDataRes = {
     data: {

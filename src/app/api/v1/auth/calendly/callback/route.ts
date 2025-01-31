@@ -3,6 +3,7 @@ import { CalendlyClient } from "@/lib/calendly-client";
 import dayjs from "dayjs";
 import { NextRequest, NextResponse } from "next/server";
 import { createLogger, logError } from "@/utils/logger";
+import { User } from "@/db/schema";
 
 export const dynamic = "force-dynamic";
 
@@ -59,6 +60,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL("/error", request.url));
     }
 
+    let dbUserGl: User | null = null;
+
     // If there is no pipedrive user error
     if (pipedriveUser.length > 0) {
       const [getCalendlyAccErr, calendlyAcc] =
@@ -81,17 +84,19 @@ export async function GET(request: NextRequest) {
           return NextResponse.redirect(new URL("/error", request.url));
         }
       } else {
-        const [err, _] = await querier.addCalendlyAccountToUser(
+        const [addAccErr, dbUser] = await querier.addCalendlyAccountToUser(
           pipedriveUser[0].id,
           user.resource,
           credentials,
         );
-        if (err) {
-          logError(logger, err, {
+        if (addAccErr) {
+          logError(logger, addAccErr, {
             context: "Failed to add Calendly account to user",
           });
           return NextResponse.redirect(new URL("/error", request.url));
         }
+
+        dbUserGl = dbUser;
       }
     } else {
       logError(logger, { error: "No Pipedrive user found" });
@@ -123,6 +128,40 @@ export async function GET(request: NextRequest) {
     }
 
     logger.info({ webhook: res }, "Created Calendly webhook");
+
+    if (!dbUserGl) {
+      logError(logger, new Error("dbUserGl was not set"), {
+        context: "dbuserGl was not set in calendly callback",
+      });
+      return NextResponse.redirect(new URL("/error", request.url));
+    }
+
+    const [companyErr, getCompany] = await querier.getCompanyById(
+      dbUserGl.companyId,
+    );
+
+    if (companyErr) {
+      logError(logger, companyErr, {
+        context: "Failed to get users Company",
+      });
+      return NextResponse.redirect(new URL("/error", request.url));
+    }
+
+    getCompany.calendlyOrgUri = user.resource.current_organization;
+
+    if (getCompany.calendlyOrgUri) {
+      logger.info({}, "Calendly org already exists");
+      return NextResponse.redirect(new URL("/topipedrive", request.url));
+    }
+
+    const [updateErr, _] = await querier.updateCompany(getCompany);
+
+    if (updateErr) {
+      logError(logger, updateErr, {
+        context: "Failed to update company",
+      });
+      return NextResponse.redirect(new URL("/error", request.url));
+    }
 
     return NextResponse.redirect(new URL("/topipedrive", request.url));
     // doesn't work right now

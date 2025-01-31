@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import db from "./db";
 import { BaseUserMe } from "./pipedrive-types";
 import {
-  calendlyAcc,
+  calendlyAccs,
   companies,
   Company,
   NewCompany,
@@ -55,7 +55,7 @@ export class DatabaseQueries {
       const res = await db
         .select()
         .from(users)
-        .innerJoin(calendlyAcc, eq(users.id, calendlyAcc.userId))
+        .innerJoin(calendlyAccs, eq(users.id, calendlyAccs.userId))
         .where(eq(users.id, userId));
 
       if (res.length != 1) {
@@ -76,6 +76,49 @@ export class DatabaseQueries {
       return [
         {
           message: "Database error trying to find user and calendly acc",
+          error,
+        },
+        null,
+      ] as const;
+    }
+  }
+
+  async getCompanyById(companyId: string): PromiseReturn<Company> {
+    try {
+      logDBOperation("getCompanyById", { companyDomain: companyId });
+      const company = await db
+        .select()
+        .from(companies)
+        .where(eq(companies.id, companyId));
+
+      if (company.length < 1) {
+        const error = new Error("Company not found");
+        logDBError("getCompanyById", error, { companyId });
+        return [
+          {
+            message: "Company not found",
+            error,
+          },
+          null,
+        ] as const;
+      } else if (company.length > 1) {
+        const error = new Error("Too many companies found");
+        logDBError("getCompanyById", error, { companyId });
+        return [
+          {
+            message: "Too many companies found",
+            error,
+          },
+          null,
+        ] as const;
+      }
+
+      return [null, company[0]] as const;
+    } catch (error) {
+      logDBError("getCompanyById", error, { companyId });
+      return [
+        {
+          message: "Database error when trying to find company",
           error,
         },
         null,
@@ -303,7 +346,7 @@ export class DatabaseQueries {
         userId,
         calendlyUri: calendlyUser.uri,
       });
-      await db.insert(calendlyAcc).values({
+      await db.insert(calendlyAccs).values({
         userId,
         uri: calendlyUser.uri,
         name: calendlyUser.name,
@@ -312,13 +355,36 @@ export class DatabaseQueries {
         refreshToken,
         expiresAt,
       });
-      return [null, true] as const;
+
+      const [err, user] = await this.getUser(userId);
+
+      if (err) {
+        logDBError("addCalendlyAccountToUser", err, {
+          userId,
+          calendlyUri: calendlyUser.uri,
+        });
+        return [
+          {
+            message: "User was not found",
+            error: err,
+          },
+          null,
+        ] as const;
+      }
+
+      return [null, user] as const;
     } catch (error) {
       logDBError("addCalendlyAccountToUser", error, {
         userId,
         calendlyUri: calendlyUser.uri,
       });
-      return ["Account could not be created: " + error, null] as const;
+      return [
+        {
+          message: "Account could not be created",
+          error: error,
+        },
+        null,
+      ] as const;
     }
   }
 
@@ -337,9 +403,9 @@ export class DatabaseQueries {
       }
 
       await db
-        .update(calendlyAcc)
+        .update(calendlyAccs)
         .set(formattedCreds)
-        .where(eq(calendlyAcc.uri, calendlyUri));
+        .where(eq(calendlyAccs.uri, calendlyUri));
 
       return [null, true] as const;
     } catch (error) {
@@ -380,7 +446,7 @@ export class DatabaseQueries {
       const res = await db
         .select()
         .from(users)
-        .innerJoin(calendlyAcc, eq(users.id, calendlyAcc.userId))
+        .innerJoin(calendlyAccs, eq(users.id, calendlyAccs.userId))
         .where(eq(users.id, userId))
         .limit(1);
 
