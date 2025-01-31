@@ -104,6 +104,7 @@ export async function GET(request: NextRequest) {
       scheduleUri: eventType.scheduling_url,
       uri: eventType.uri,
       calUserUri: eventType.profile.owner,
+      calUsername: eventType.profile.name,
       companyId: user.companyId
     }
   })

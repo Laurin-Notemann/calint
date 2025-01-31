@@ -80,6 +80,7 @@ export const calEventTypes = pgTable("cal_event_types", {
   slug: text("slug").notNull(),
   scheduleUri: text("schedule_uri").notNull(),
   calUserUri: text("cal_user_uri").notNull(), // this is not a foreign key to calendlyAccs, because calendlyAccs are only accs that have already created an acc
+  calUsername: text("cal_username").notNull(), 
   companyId: uuid("company_id")
     .notNull()
     .references(() => companies.id, {
