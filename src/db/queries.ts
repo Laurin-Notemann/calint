@@ -1,23 +1,95 @@
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import db from "./db";
 import { BaseUserMe } from "./pipedrive-types";
 import {
   calendlyAccs,
+  calEventTypes,
   companies,
   Company,
+  NewCalEventType,
   NewCompany,
   User,
   UserCalendly,
   users,
 } from "./schema";
 import { logDBError, logDBOperation } from "@/utils/db-logger";
+import { EventType } from "@/lib/calendly-client";
 
 export type PromiseReturn<T> = Promise<
   Readonly<[QuerierError, null] | [null, T]>
 >;
 
 export class DatabaseQueries {
-  constructor() {}
+  constructor() { }
+
+  async addAllEventTypes(eventTypes: NewCalEventType[]) {
+    try {
+      logDBOperation("addAllEventTypes", { eventTypes });
+
+      const [checkError, result] = await this.checkExistingEventTypes(eventTypes);
+
+      if (checkError) {
+        return [checkError, null] as const;
+      }
+
+      if (!result.new.length) {
+        return [null, {
+          message: "All event types already exist",
+          added: 0
+        }] as const;
+      }
+
+      await db.insert(calEventTypes).values(result.new);
+
+      return [null, {
+        message: "Successfully added new event types",
+        added: result.new.length,
+        skipped: result.existing.length
+      }] as const;
+    } catch (error) {
+      logDBError("addAllEventTypes", error, { eventTypes });
+      return [
+        {
+          message: "Database error trying insert all eventTypes",
+          error,
+        },
+        null,
+      ] as const;
+    }
+  }
+
+  async checkExistingEventTypes(eventTypes: NewCalEventType[]) {
+    try {
+      logDBOperation("checkExistingEventTypes", { eventTypes });
+
+      const existingTypes = await db
+        .select()
+        .from(calEventTypes)
+        .where(
+          inArray(
+            calEventTypes.uri,
+            eventTypes.map(et => et.uri)
+          )
+        );
+
+      const existingNames = new Set(existingTypes.map(et => et.name));
+      const newEventTypes = eventTypes.filter(et => !existingNames.has(et.name));
+
+      return [null, {
+        existing: existingTypes,
+        new: newEventTypes,
+        hasConflicts: existingTypes.length > 0
+      }] as const;
+
+    } catch (error) {
+      logDBError("checkExistingEventTypes", error, { eventTypes });
+      return [{
+        message: "Database error checking existing eventTypes",
+        error,
+      }, null] as const;
+    }
+  }
+
 
   async getUser(userId: number): PromiseReturn<User> {
     try {

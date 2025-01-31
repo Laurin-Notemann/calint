@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 // @ts-expect-error because pipedrive sucks
 import { ActivityTypesApi } from "pipedrive";
 import { createLogger, logError } from "@/utils/logger";
+import { NewCalEventType } from "@/db/schema";
 
 export interface ActivityType {
   id: number;
@@ -83,6 +84,7 @@ export async function GET(request: NextRequest) {
 
   const [eventTypesErr, eventTypes] = await calendlyClient.getAllEventTypes();
 
+
   if (eventTypesErr) {
     logError(logger, eventTypesErr.error, {
       context: "getEventTypes",
@@ -91,6 +93,30 @@ export async function GET(request: NextRequest) {
     });
     return NextResponse.json(
       { error: "Could not get Event types" + eventTypesErr.error },
+      { status: 400 },
+    );
+  }
+
+  const dbEventTypes: NewCalEventType[] = eventTypes.collection.map((eventType) => {
+    return {
+      name: eventType.name,
+      slug: eventType.slug,
+      scheduleUri: eventType.scheduling_url,
+      uri: eventType.uri,
+      calUserUri: eventType.profile.owner,
+      companyId: user.companyId
+    }
+  })
+
+  const [addEventTypesErr, _] = await querier.addAllEventTypes(dbEventTypes)
+
+  if (addEventTypesErr) {
+    logError(logger, addEventTypesErr.error, {
+      context: "getEventTypes",
+      userId,
+    });
+    return NextResponse.json(
+      { error: "Could not get Event types" + addEventTypesErr.error },
       { status: 400 },
     );
   }

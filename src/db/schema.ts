@@ -101,3 +101,6 @@ export type UserCalendly = {
   calendly_accs: CalendlyAcc;
   users: User;
 };
+
+export type CalEventType = typeof calEventTypes.$inferSelect
+export type NewCalEventType = typeof calEventTypes.$inferInsert
