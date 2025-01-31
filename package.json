@@ -9,7 +9,7 @@
     "lint": "next lint",
     "format": "prettier ./src --write",
     "reset-db": "docker compose down && rm -rf ./drizzle && drizzle-kit generate && docker compose up -d && sleep 1 && drizzle-kit push",
-    "db-migration": "drizzle-kit push"
+    "db-migration": "drizzle-kit generate && drizzle-kit push"
   },
   "dependencies": {
     "@pipedrive/app-extensions-sdk": "^0.11.1",
