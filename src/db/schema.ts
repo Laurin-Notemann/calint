@@ -98,6 +98,6 @@ export type CalendlyAcc = typeof calendlyAccs.$inferSelect;
 export type NewCalendlyAcc = typeof calendlyAccs.$inferInsert;
 
 export type UserCalendly = {
-  calendly_acc: CalendlyAcc;
+  calendly_accs: CalendlyAcc;
   users: User;
 };

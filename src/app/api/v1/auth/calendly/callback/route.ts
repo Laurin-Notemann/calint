@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
       //if there is no calendly acc create a new one
       if (calendlyAcc.length > 0) {
         const [err, _] = await querier.loginWithCalendly(
-          calendlyAcc[0].calendly_acc.uri,
+          calendlyAcc[0].calendly_accs.uri,
           credentials,
         );
         if (err) {

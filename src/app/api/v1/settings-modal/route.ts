@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
     };
   });
 
-  const calendlyAcc = userCalendly.calendly_acc;
+  const calendlyAcc = userCalendly.calendly_accs;
 
   const calendlyClient = new CalendlyClient({
     accessToken: calendlyAcc.accessToken,
