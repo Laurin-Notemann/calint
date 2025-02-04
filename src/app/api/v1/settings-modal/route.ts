@@ -10,19 +10,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ActivityTypesApi } from "pipedrive";
 import { createLogger, logError } from "@/utils/logger";
 import { NewCalEventType, NewPipedriveActivityType } from "@/db/schema";
-
-export interface ActivityType {
-  id: number;
-  order_nr: number;
-  name: string;
-  key_string: string;
-  icon_key: string;
-  active_flag: boolean;
-  color: string;
-  is_custom_flag: boolean;
-  add_time: string;
-  update_time: string;
-}
+import { ActivityType } from "pipedrive/v1";
 
 interface ActivityTypesResponse {
   success: boolean;
@@ -68,7 +56,6 @@ export async function GET(request: NextRequest) {
     );
   }
 
-
   const calendlyAcc = userCalendly.calendly_accs;
 
   const calendlyClient = new CalendlyClient({
@@ -77,7 +64,6 @@ export async function GET(request: NextRequest) {
   });
 
   const [eventTypesErr, eventTypes] = await calendlyClient.getAllEventTypes();
-
 
   if (eventTypesErr) {
     logError(logger, eventTypesErr.error, {
@@ -91,19 +77,21 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const dbEventTypes: NewCalEventType[] = eventTypes.collection.map((eventType) => {
-    return {
-      name: eventType.name,
-      slug: eventType.slug,
-      scheduleUri: eventType.scheduling_url,
-      uri: eventType.uri,
-      calUserUri: eventType.profile.owner,
-      calUsername: eventType.profile.name,
-      companyId: user.companyId
-    }
-  })
+  const dbEventTypes: NewCalEventType[] = eventTypes.collection.map(
+    (eventType) => {
+      return {
+        name: eventType.name,
+        slug: eventType.slug,
+        scheduleUri: eventType.scheduling_url,
+        uri: eventType.uri,
+        calUserUri: eventType.profile.owner,
+        calUsername: eventType.profile.name,
+        companyId: user.companyId,
+      };
+    },
+  );
 
-  const [addEventTypesErr, _] = await querier.addAllEventTypes(dbEventTypes)
+  const [addEventTypesErr, _] = await querier.addAllEventTypes(dbEventTypes);
 
   if (addEventTypesErr) {
     logError(logger, addEventTypesErr.error, {
@@ -117,15 +105,18 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const dbActivityTypes: NewPipedriveActivityType[] = data.map((activityType) => {
-    return {
-      name: activityType.name,
-      pipedriveId: activityType.id,
-      companyId: user.companyId
-    };
-  });
+  const dbActivityTypes: NewPipedriveActivityType[] = data.map(
+    (activityType) => {
+      return {
+        name: activityType.name,
+        pipedriveId: activityType.id,
+        companyId: user.companyId,
+      };
+    },
+  );
 
-  const [addActivityTypesErr, __] = await querier.addAllActivityTypes(dbActivityTypes)
+  const [addActivityTypesErr, __] =
+    await querier.addAllActivityTypes(dbActivityTypes);
 
   if (addActivityTypesErr) {
     logError(logger, addActivityTypesErr.error, {

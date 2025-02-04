@@ -35,7 +35,10 @@ export const users = pgTable("users", {
   name: text("name").notNull(), // uses pipedrive name
   refreshToken: text("refresh_token").notNull(),
   accessToken: text("access_token").notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
+  expiresIn: integer("expires_in").notNull(),
+  scope: text("scope").notNull(),
+  tokenType: text("token_type").notNull(),
+  apiDomain: text("api_domain").notNull(),
   companyId: uuid("company_id")
     .notNull()
     .references(() => companies.id, {
@@ -80,7 +83,7 @@ export const calEventTypes = pgTable("cal_event_types", {
   slug: text("slug").notNull(),
   scheduleUri: text("schedule_uri").notNull(),
   calUserUri: text("cal_user_uri").notNull(), // this is not a foreign key to calendlyAccs, because calendlyAccs are only accs that have already created an acc
-  calUsername: text("cal_username").notNull(), 
+  calUsername: text("cal_username").notNull(),
   companyId: uuid("company_id")
     .notNull()
     .references(() => companies.id, {
@@ -110,8 +113,9 @@ export type UserCalendly = {
   users: User;
 };
 
-export type CalEventType = typeof calEventTypes.$inferSelect
-export type NewCalEventType = typeof calEventTypes.$inferInsert
+export type CalEventType = typeof calEventTypes.$inferSelect;
+export type NewCalEventType = typeof calEventTypes.$inferInsert;
 
-export type PipedriveActivityType = typeof pipedriveActivityTypes.$inferSelect
-export type NewPipedriveActivityType = typeof pipedriveActivityTypes.$inferInsert
+export type PipedriveActivityType = typeof pipedriveActivityTypes.$inferSelect;
+export type NewPipedriveActivityType =
+  typeof pipedriveActivityTypes.$inferInsert;

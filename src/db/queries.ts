@@ -15,10 +15,10 @@ import {
   users,
 } from "./schema";
 import { logDBError, logDBOperation } from "@/utils/db-logger";
-import { EventType } from "@/lib/calendly-client";
+import { GetCurrentUserResponseAllOfData, GetCurrentUserResponseAllOfDataAllOf, TokenResponse } from "pipedrive/v1";
 
 export type PromiseReturn<T> = Promise<
-  Readonly<[QuerierError, null] | [null, T]>
+  Readonly<[CalIntError, null] | [null, T]>
 >;
 
 export class DatabaseQueries {
@@ -28,26 +28,33 @@ export class DatabaseQueries {
     try {
       logDBOperation("addAllEventTypes", { eventTypes });
 
-      const [checkError, result] = await this.checkExistingEventTypes(eventTypes);
+      const [checkError, result] =
+        await this.checkExistingEventTypes(eventTypes);
 
       if (checkError) {
         return [checkError, null] as const;
       }
 
       if (!result.new.length) {
-        return [null, {
-          message: "All event types already exist",
-          added: 0
-        }] as const;
+        return [
+          null,
+          {
+            message: "All event types already exist",
+            added: 0,
+          },
+        ] as const;
       }
 
       await db.insert(calEventTypes).values(result.new);
 
-      return [null, {
-        message: "Successfully added new event types",
-        added: result.new.length,
-        skipped: result.existing.length
-      }] as const;
+      return [
+        null,
+        {
+          message: "Successfully added new event types",
+          added: result.new.length,
+          skipped: result.existing.length,
+        },
+      ] as const;
     } catch (error) {
       logDBError("addAllEventTypes", error, { eventTypes });
       return [
@@ -70,25 +77,32 @@ export class DatabaseQueries {
         .where(
           inArray(
             calEventTypes.uri,
-            eventTypes.map(et => et.uri)
-          )
+            eventTypes.map((et) => et.uri),
+          ),
         );
 
-      const existingNames = new Set(existingTypes.map(et => et.name));
-      const newEventTypes = eventTypes.filter(et => !existingNames.has(et.name));
+      const existingNames = new Set(existingTypes.map((et) => et.name));
+      const newEventTypes = eventTypes.filter(
+        (et) => !existingNames.has(et.name),
+      );
 
-      return [null, {
-        existing: existingTypes,
-        new: newEventTypes,
-        hasConflicts: existingTypes.length > 0
-      }] as const;
-
+      return [
+        null,
+        {
+          existing: existingTypes,
+          new: newEventTypes,
+          hasConflicts: existingTypes.length > 0,
+        },
+      ] as const;
     } catch (error) {
       logDBError("checkExistingEventTypes", error, { eventTypes });
-      return [{
-        message: "Database error checking existing eventTypes",
-        error,
-      }, null] as const;
+      return [
+        {
+          message: "Database error checking existing eventTypes",
+          error,
+        },
+        null,
+      ] as const;
     }
   }
 
@@ -96,26 +110,33 @@ export class DatabaseQueries {
     try {
       logDBOperation("addAllActivityTypes", { activityTypes });
 
-      const [checkError, result] = await this.checkExistingActivityTypes(activityTypes);
+      const [checkError, result] =
+        await this.checkExistingActivityTypes(activityTypes);
 
       if (checkError) {
         return [checkError, null] as const;
       }
 
       if (!result.new.length) {
-        return [null, {
-          message: "All activity types already exist",
-          added: 0
-        }] as const;
+        return [
+          null,
+          {
+            message: "All activity types already exist",
+            added: 0,
+          },
+        ] as const;
       }
 
       await db.insert(pipedriveActivityTypes).values(result.new);
 
-      return [null, {
-        message: "Successfully added new activity types",
-        added: result.new.length,
-        skipped: result.existing.length
-      }] as const;
+      return [
+        null,
+        {
+          message: "Successfully added new activity types",
+          added: result.new.length,
+          skipped: result.existing.length,
+        },
+      ] as const;
     } catch (error) {
       logDBError("addAllActivityTypes", error, { activityTypes });
       return [
@@ -138,25 +159,32 @@ export class DatabaseQueries {
         .where(
           inArray(
             pipedriveActivityTypes.pipedriveId,
-            activityTypes.map(at => at.pipedriveId)
-          )
+            activityTypes.map((at) => at.pipedriveId),
+          ),
         );
 
-      const existingIds = new Set(existingTypes.map(at => at.pipedriveId));
-      const newActivityTypes = activityTypes.filter(at => !existingIds.has(at.pipedriveId));
+      const existingIds = new Set(existingTypes.map((at) => at.pipedriveId));
+      const newActivityTypes = activityTypes.filter(
+        (at) => !existingIds.has(at.pipedriveId),
+      );
 
-      return [null, {
-        existing: existingTypes,
-        new: newActivityTypes,
-        hasConflicts: existingTypes.length > 0
-      }] as const;
-
+      return [
+        null,
+        {
+          existing: existingTypes,
+          new: newActivityTypes,
+          hasConflicts: existingTypes.length > 0,
+        },
+      ] as const;
     } catch (error) {
       logDBError("checkExistingActivityTypes", error, { activityTypes });
-      return [{
-        message: "Database error checking existing activityTypes",
-        error,
-      }, null] as const;
+      return [
+        {
+          message: "Database error checking existing activityTypes",
+          error,
+        },
+        null,
+      ] as const;
     }
   }
 
@@ -404,14 +432,29 @@ export class DatabaseQueries {
   }
 
   async createUser(
-    user: BaseUserMe,
-    { accessToken, refreshToken, expiresAt }: AccountLogin,
-  ): Promise<Readonly<[null, boolean] | [QuerierError, null]>> {
+    user: GetCurrentUserResponseAllOfData,
+    {
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      expires_in: expiresIn,
+      token_type: tokenType,
+      scope,
+      api_domain: apiDomain,
+    }: TokenResponse,
+  ): Promise<Readonly<[null, boolean] | [CalIntError, null]>> {
     try {
       logDBOperation("createUser", { userId: user.id });
+
+      if (!user.id || !user.name) {
+        return [{
+          message: "Missing required user fields",
+          error: new Error("id and name are required")
+        }, null] as const;
+      }
+
       const [error, company] = await this.createCompanyOrReturnCompany({
         name: user.company_name,
-        domain: user.company_domain,
+        domain: user.company_domain!,
       });
 
       if (error) {
@@ -426,7 +469,10 @@ export class DatabaseQueries {
           name: user.name,
           accessToken,
           refreshToken,
-          expiresAt,
+          expiresIn,
+          tokenType,
+          scope,
+          apiDomain,
           companyId: company.id,
         })
         .returning();
@@ -458,8 +504,8 @@ export class DatabaseQueries {
 
   async loginWithPipedrive(
     pipedriveAccId: number,
-    logins: AccountLogin,
-  ): Promise<Readonly<[QuerierError, null] | [null, boolean]>> {
+    logins: TokenResponse,
+  ): Promise<Readonly<[CalIntError, null] | [null, boolean]>> {
     try {
       logDBOperation("loginWithPipedrive", { pipedriveAccId });
       await db.update(users).set(logins).where(eq(users.id, pipedriveAccId));
@@ -563,7 +609,7 @@ export class DatabaseQueries {
 
   async checkUserExists(
     userId: number,
-  ): Promise<Readonly<[QuerierError, null] | [null, User[]]>> {
+  ): Promise<Readonly<[CalIntError, null] | [null, User[]]>> {
     try {
       logDBOperation("checkUserExists", { userId });
       const user = await db.select().from(users).where(eq(users.id, userId));
@@ -605,7 +651,7 @@ export class DatabaseQueries {
   }
 }
 
-type QuerierError = {
+export type CalIntError = {
   message: string;
   error: any;
 };

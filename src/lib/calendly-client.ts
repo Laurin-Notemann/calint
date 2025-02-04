@@ -2,7 +2,6 @@ import { CalendlyUser, querier } from "@/db/queries";
 import { env } from "./env";
 import dayjs from "dayjs";
 import { createLogger, logAPICall, logError } from "@/utils/logger";
-import { logDBError, logDBOperation } from "@/utils/db-logger";
 
 export class CalendlyClient {
   private logger = createLogger("CalendlyClient");
@@ -83,6 +82,8 @@ export class CalendlyClient {
         return [dbErr, null] as const;
       }
 
+      this.updateCalendlyTokens(data);
+
       return [null, data] as const;
     } catch (error) {
       logError(this.logger, error, {
@@ -112,7 +113,8 @@ export class CalendlyClient {
     try {
       const res = await fetch(
         "https://api.calendly.com/event_types?organization=" +
-          token.organization + "&count=100",
+          token.organization +
+          "&count=100",
         {
           method: "GET",
           headers: {

@@ -27,7 +27,7 @@
     "openapicmd": "^2.6.1",
     "path": "^0.12.7",
     "pino": "^9.5.0",
-    "pipedrive": "^23.4.2",
+    "pipedrive": "^24.0.0",
     "postgres": "^3.4.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

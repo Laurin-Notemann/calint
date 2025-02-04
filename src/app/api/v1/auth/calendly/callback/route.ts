@@ -150,7 +150,10 @@ export async function GET(request: NextRequest) {
     getCompany.calendlyOrgUri = user.resource.current_organization;
 
     if (getCompany.calendlyOrgUri) {
-      logger.info({uri: getCompany.calendlyOrgUri}, "Calendly org already exists");
+      logger.info(
+        { uri: getCompany.calendlyOrgUri },
+        "Calendly org already exists",
+      );
       return NextResponse.redirect(new URL("/topipedrive", request.url));
     }
 
