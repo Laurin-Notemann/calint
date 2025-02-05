@@ -40,7 +40,7 @@ export class CalintSetup {
     const pipedriveUser = user.users;
     const calAcc = user.calendly_accs;
 
-    this.pipedriveController.triggerTokenUpdate(pipedriveUser.id);
+    await this.pipedriveController.triggerTokenUpdate(pipedriveUser.id);
 
     const [activityTypesErr, activityTypes] =
       await this.pipedriveController.getAndSaveActiviyTypes(
