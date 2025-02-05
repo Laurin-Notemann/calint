@@ -28,6 +28,7 @@ export class PipedriveController {
   }
 
   async getAndSaveActiviyTypes(userId: number, companyId: string) {
+    this.logger.info(this.config)
     if (!this.config) {
       const err = new Error(
         "this.config was not set (call triggerTokenUpdate before using getAndSaveActiviyTypes",
@@ -238,11 +239,9 @@ export class PipedriveController {
     }
 
     if (this.config) {
-      this.logger.info("test1")
       this.config.accessToken = this.oauth2.getAccessToken;
       this.config.basePath = this.oauth2.basePath;
     } else {
-      this.logger.info("test2")
       this.config = new Configuration({
         accessToken: this.oauth2.getAccessToken,
         basePath: this.oauth2.basePath,
