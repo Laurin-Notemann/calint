@@ -217,7 +217,11 @@ export class PipedriveController {
   }
 
   private async updateConfig(tokens?: TokenResponse) {
-    if (!tokens) {
+    if (tokens) {
+      console.log('in here')
+      this.tokens = { ...tokens };
+      this.oauth2.updateToken(tokens);
+    } else {
       const [err, _] = await this.setTokenFromDB();
 
       if (err) {
@@ -226,9 +230,6 @@ export class PipedriveController {
       }
 
       this.oauth2.updateToken(this.tokens);
-    } else {
-      this.tokens = { ...tokens };
-      this.oauth2.updateToken(tokens);
     }
 
     if (!this.tokens) {
