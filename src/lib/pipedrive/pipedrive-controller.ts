@@ -148,12 +148,6 @@ export class PipedriveController {
   }
 
   async getUser(): PromiseReturn<GetCurrentUserResponseAllOfData> {
-    const [configErr, _] = await this.updateConfig();
-    if (configErr) {
-      logError(this.logger, configErr, { context: "authorize" });
-      return [configErr, null] as const;
-    }
-
     if (!this.config) {
       return [
         {
@@ -218,7 +212,6 @@ export class PipedriveController {
 
   private async updateConfig(tokens?: TokenResponse) {
     if (tokens) {
-      console.log('in here')
       this.tokens = { ...tokens };
       this.oauth2.updateToken(tokens);
     } else {
