@@ -238,9 +238,11 @@ export class PipedriveController {
     }
 
     if (this.config) {
+      this.logger.info("test1")
       this.config.accessToken = this.oauth2.getAccessToken;
       this.config.basePath = this.oauth2.basePath;
     } else {
+      this.logger.info("test2")
       this.config = new Configuration({
         accessToken: this.oauth2.getAccessToken,
         basePath: this.oauth2.basePath,
