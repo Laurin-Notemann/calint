@@ -246,7 +246,7 @@ export class PipedriveController {
         basePath: this.oauth2.basePath,
       });
 
-      this.logger.info(this.config)
+      this.logger.info("HALLO" + this.config)
     }
     return [null, true] as const;
   }
