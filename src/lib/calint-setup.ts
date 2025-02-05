@@ -42,8 +42,6 @@ export class CalintSetup {
 
     await this.pipedriveController.triggerTokenUpdate(pipedriveUser.id);
 
-    this.logger.info('What about htis one' + this.pipedriveController.config)
-
     const [activityTypesErr, activityTypes] =
       await this.pipedriveController.getAndSaveActiviyTypes(
         pipedriveUser.id,

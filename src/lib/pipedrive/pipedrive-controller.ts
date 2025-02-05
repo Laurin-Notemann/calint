@@ -85,7 +85,7 @@ export class PipedriveController {
 
   async triggerTokenUpdate(userId: number) {
     this.userId = userId;
-    this.updateConfig();
+    await this.updateConfig();
   }
 
   async authorize(code: string) {
@@ -245,8 +245,6 @@ export class PipedriveController {
         accessToken: this.oauth2.getAccessToken,
         basePath: this.oauth2.basePath,
       });
-
-      this.logger.info("HALLO" + this.config)
     }
     return [null, true] as const;
   }
