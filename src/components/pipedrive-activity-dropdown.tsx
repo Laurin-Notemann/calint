@@ -1,4 +1,4 @@
-import { ActivityType } from "@/app/api/v1/settings-modal/route";
+import { ActivityType } from "pipedrive/v1";
 
 type PipeDriveActivityDropdownProps = {
   activities: ActivityType[];

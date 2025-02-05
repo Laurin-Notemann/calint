@@ -3,9 +3,9 @@
 import { useEffect, Suspense } from "react";
 import AppExtensionsSDK from "@pipedrive/app-extensions-sdk";
 import { useSearchParams } from "next/navigation";
-import { SettingsDataRes } from "@/app/api/v1/settings-modal/route";
 import { useQuery } from "@tanstack/react-query";
 import SetupFrame from "@/components/SetupFrame";
+import { SettingsDataRes } from "@/lib/calint-setup";
 
 export const dynamic = "force-dynamic";
 

@@ -1,5 +1,5 @@
 import SetupFrame from "@/components/SetupFrame";
-import { SettingsDataRes } from "../api/v1/settings-modal/route";
+import { SettingsDataRes } from "@/lib/calint-setup";
 
 const settingsData: SettingsDataRes = {
   data: {
@@ -249,7 +249,7 @@ const settingsData: SettingsDataRes = {
         order_nr: 1,
         name: "Call",
         key_string: "call",
-        icon_key: "phone",
+        icon_key: "call",
         active_flag: true,
         color: "#44BB77",
         is_custom_flag: false,
@@ -273,7 +273,7 @@ const settingsData: SettingsDataRes = {
         order_nr: 3,
         name: "Email",
         key_string: "email",
-        icon_key: "mail",
+        icon_key: "call",
         active_flag: true,
         color: "#2196F3",
         is_custom_flag: false,
@@ -297,7 +297,7 @@ const settingsData: SettingsDataRes = {
         order_nr: 5,
         name: "Deadline",
         key_string: "deadline",
-        icon_key: "clock",
+        icon_key: "call",
         active_flag: true,
         color: "#F44336",
         is_custom_flag: false,
@@ -309,7 +309,7 @@ const settingsData: SettingsDataRes = {
         order_nr: 6,
         name: "Follow-up",
         key_string: "follow_up",
-        icon_key: "redo",
+        icon_key: "call",
         active_flag: true,
         color: "#FF9800",
         is_custom_flag: true,

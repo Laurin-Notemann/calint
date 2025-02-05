@@ -1,7 +1,8 @@
-import { initAPIClient, getAuthorizationUrl } from "@/lib/oauth";
+import { querier } from "@/db/queries";
+import { PipedriveController } from "@/lib/pipedrive/pipedrive-controller";
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const client = initAPIClient({});
-  return NextResponse.redirect(getAuthorizationUrl(client));
+  const pipeController = new PipedriveController(querier);
+  return NextResponse.redirect(pipeController.oauth2.authorizationUrl);
 }

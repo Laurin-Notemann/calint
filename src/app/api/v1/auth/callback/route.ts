@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { env } from "@/lib/env";
 import { createLogger, logError } from "@/utils/logger";
-import { pipedriveController } from "@/lib/pipedrive/pipedrive-controller";
+import { PipedriveController } from "@/lib/pipedrive/pipedrive-controller";
+import { querier } from "@/db/queries";
 
 const logger = createLogger("pipedrive-callback");
 
@@ -15,15 +16,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "No code provided" }, { status: 400 });
     }
 
-    const [err, user] = await pipedriveController.authorize(code)
+    const pipedriveController = new PipedriveController(querier);
+
+    const [err, user] = await pipedriveController.authorize(code);
 
     if (err) {
       logError(logger, err, { context: "pipedriveCallback" });
       const errorUrl = new URL("/error", request.url);
-      errorUrl.searchParams.set(
-        "error-msg",
-        err.message,
-      );
+      errorUrl.searchParams.set("error-msg", err.message);
       return NextResponse.redirect(errorUrl);
     }
 
@@ -42,10 +42,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     logError(logger, error, { context: "pipedriveCallback" });
     const errorUrl = new URL("/error", request.url);
-    errorUrl.searchParams.set(
-      "error-msg",
-      "" + error,
-    );
+    errorUrl.searchParams.set("error-msg", "" + error);
     return NextResponse.redirect(errorUrl);
   }
 }

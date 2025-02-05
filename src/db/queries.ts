@@ -15,14 +15,18 @@ import {
   users,
 } from "./schema";
 import { logDBError, logDBOperation } from "@/utils/db-logger";
-import { GetCurrentUserResponseAllOfData, GetCurrentUserResponseAllOfDataAllOf, TokenResponse } from "pipedrive/v1";
+import {
+  GetCurrentUserResponseAllOfData,
+  GetCurrentUserResponseAllOfDataAllOf,
+  TokenResponse,
+} from "pipedrive/v1";
 
 export type PromiseReturn<T> = Promise<
   Readonly<[CalIntError, null] | [null, T]>
 >;
 
 export class DatabaseQueries {
-  constructor() { }
+  constructor() {}
 
   async addAllEventTypes(eventTypes: NewCalEventType[]) {
     try {
@@ -446,10 +450,13 @@ export class DatabaseQueries {
       logDBOperation("createUser", { userId: user.id });
 
       if (!user.id || !user.name) {
-        return [{
-          message: "Missing required user fields",
-          error: new Error("id and name are required")
-        }, null] as const;
+        return [
+          {
+            message: "Missing required user fields",
+            error: new Error("id and name are required"),
+          },
+          null,
+        ] as const;
       }
 
       const [error, company] = await this.createCompanyOrReturnCompany({

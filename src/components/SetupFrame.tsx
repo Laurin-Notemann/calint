@@ -1,9 +1,9 @@
 "use client";
-import { SettingsDataRes } from "@/app/api/v1/settings-modal/route";
 import { PipedriveSetup } from "./pipedrive-setup";
 import { CalendlyEventSidebar } from "./calendly-event-sidebar";
 import { useState } from "react";
 import { EventType } from "@/lib/calendly-client";
+import { SettingsDataRes } from "@/lib/calint-setup";
 
 const SetupFrame = ({
   settingsData,

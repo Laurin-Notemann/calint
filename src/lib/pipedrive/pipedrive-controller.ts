@@ -1,4 +1,5 @@
 import {
+  ActivityTypesApi,
   Configuration,
   GetCurrentUserResponseAllOfData,
   OAuth2Configuration,
@@ -8,6 +9,7 @@ import {
 import { env } from "../env";
 import { DatabaseQueries, PromiseReturn, querier } from "@/db/queries";
 import createLogger, { logError } from "@/utils/logger";
+import { NewPipedriveActivityType } from "@/db/schema";
 
 export class PipedriveController {
   oauth2: OAuth2Configuration;
@@ -25,6 +27,67 @@ export class PipedriveController {
     this.querier = querier;
   }
 
+  async getAndSaveActiviyTypes(userId: number, companyId: string) {
+    if (!this.config) {
+      const err = new Error(
+        "this.config was not set (call triggerTokenUpdate before using getAndSaveActiviyTypes",
+      );
+      logError(this.logger, err, { context: "getAndSaveActiviyTypes" });
+      return [
+        {
+          message: "",
+          error: err,
+        },
+        null,
+      ] as const;
+    }
+
+    const api = new ActivityTypesApi(this.config);
+
+    const res = await api.getActivityTypes();
+
+    if (!res.success) {
+      const err = new Error("Api call getActivityTypes failed.");
+      logError(this.logger, err, { context: "getAndSaveActiviyTypes" });
+      return [
+        {
+          message: "" + err,
+          error: err,
+        },
+        null,
+      ] as const;
+    }
+
+    const dbActivityTypes: NewPipedriveActivityType[] = res.data.map(
+      (activityType) => {
+        return {
+          name: activityType.name,
+          pipedriveId: activityType.id,
+          companyId,
+        };
+      },
+    );
+
+    const [addActivityTypesErr, __] =
+      await this.querier.addAllActivityTypes(dbActivityTypes);
+
+    if (addActivityTypesErr) {
+      logError(this.logger, addActivityTypesErr.error, {
+        context: "addActivityTypes",
+        details: addActivityTypesErr.error.details,
+        userId,
+      });
+      return [addActivityTypesErr, null] as const;
+    }
+
+    return [null, res.data] as const;
+  }
+
+  async triggerTokenUpdate(userId: number) {
+    this.userId = userId;
+    this.updateConfig();
+  }
+
   async authorize(code: string) {
     const res = await this.oauth2.authorize(code);
 
@@ -40,23 +103,26 @@ export class PipedriveController {
       return [err, null] as const;
     }
 
-    const [saveErr, __] = await this.saveUserToDB(user)
+    const [saveErr, __] = await this.saveUserToDB(user);
     if (saveErr) {
       logError(this.logger, saveErr, { context: "authorize" });
       return [saveErr, null] as const;
     }
 
-    return [null, user] as const
+    return [null, user] as const;
   }
 
   private async saveUserToDB(user: GetCurrentUserResponseAllOfData) {
     if (!this.tokens) {
       const err = new Error("this.tokens is not set");
       logError(this.logger, err, { context: "saveUserToDB" });
-      return [{
-        message: "",
-        error: err
-      }, null] as const;
+      return [
+        {
+          message: "",
+          error: err,
+        },
+        null,
+      ] as const;
     }
 
     const [checkUserErr, exUser] = await querier.checkUserExists(user.id!);
@@ -78,7 +144,7 @@ export class PipedriveController {
       }
     }
 
-    return [null, user] as const
+    return [null, user] as const;
   }
 
   async getUser(): PromiseReturn<GetCurrentUserResponseAllOfData> {
@@ -111,25 +177,30 @@ export class PipedriveController {
       ] as const;
     }
 
-    this.userId = data.data.id!
+    this.userId = data.data.id!;
 
     return [null, data.data] as const;
   }
 
   private async setTokenFromDB() {
     if (!this.userId) {
-      const err = new Error("this.userId was not set.")
+      const err = new Error("this.userId was not set.");
       logError(this.logger, err, { context: "setTokenFromDB" });
-      return [{
-        message: "",
-        error: err
-      }, null] as const;
+      return [
+        {
+          message: "",
+          error: err,
+        },
+        null,
+      ] as const;
     }
 
     const [err, user] = await this.querier.getUser(this.userId);
 
     if (err) {
-      logError(this.logger, err, { context: "setTokenFromDB: Could not find user" });
+      logError(this.logger, err, {
+        context: "setTokenFromDB: Could not find user",
+      });
       return [err, null] as const;
     }
 
@@ -139,15 +210,15 @@ export class PipedriveController {
       expires_in: user.expiresIn,
       scope: user.scope,
       api_domain: user.apiDomain,
-      token_type: user.tokenType
+      token_type: user.tokenType,
     };
 
-    return [null, true] as const
+    return [null, true] as const;
   }
 
   private async updateConfig(tokens?: TokenResponse) {
     if (!tokens) {
-      const [err, _] = await this.setTokenFromDB()
+      const [err, _] = await this.setTokenFromDB();
 
       if (err) {
         logError(this.logger, err, { context: "updateToken" });
@@ -163,12 +234,14 @@ export class PipedriveController {
     if (!this.tokens) {
       const err = new Error("this.tokens is not set");
       logError(this.logger, err, { context: "updateToken" });
-      return [{
-        message: "",
-        error: err
-      }, null] as const;
+      return [
+        {
+          message: "",
+          error: err,
+        },
+        null,
+      ] as const;
     }
-
 
     if (this.config) {
       this.config.accessToken = this.oauth2.getAccessToken;
@@ -179,9 +252,6 @@ export class PipedriveController {
         basePath: this.oauth2.basePath,
       });
     }
-    return [null, true] as const
+    return [null, true] as const;
   }
-
 }
-
-export const pipedriveController = new PipedriveController(querier)

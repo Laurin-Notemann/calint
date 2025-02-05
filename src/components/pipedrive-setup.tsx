@@ -1,6 +1,6 @@
-import { ActivityType } from "@/app/api/v1/settings-modal/route";
 import { PipedriveMapping } from "./pipedrive-mapping";
 import { EventType } from "@/lib/calendly-client";
+import { ActivityType } from "pipedrive/v1";
 import { useState } from "react";
 
 type PipedriveSetupProps = {

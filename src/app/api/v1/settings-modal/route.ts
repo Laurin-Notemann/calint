@@ -1,21 +1,9 @@
 import { querier } from "@/db/queries";
-import {
-  CalendlyClient,
-  CalendlyResponse,
-  EventType,
-} from "@/lib/calendly-client";
-import { initAPIClient } from "@/lib/oauth";
 import { NextRequest, NextResponse } from "next/server";
-// @ts-expect-error because pipedrive sucks
-import { ActivityTypesApi } from "pipedrive";
 import { createLogger, logError } from "@/utils/logger";
-import { NewCalEventType, NewPipedriveActivityType } from "@/db/schema";
-import { ActivityType } from "pipedrive/v1";
-
-interface ActivityTypesResponse {
-  success: boolean;
-  data: ActivityType[];
-}
+import { PipedriveController } from "@/lib/pipedrive/pipedrive-controller";
+import { CalendlyController } from "@/lib/calendly/calendly-controller";
+import { CalintSetup } from "@/lib/calint-setup";
 
 const logger = createLogger("settings-modal");
 
@@ -28,124 +16,21 @@ export async function GET(request: NextRequest) {
 
   const userId = parseInt(stringUserId);
 
-  const [getUserErr, userCalendly] =
-    await querier.getUserAndCalendlyAcc(userId);
-  if (getUserErr) {
-    logError(logger, getUserErr, { context: "getUserAndCalendlyAcc", userId });
-    return NextResponse.json({ error: getUserErr.message }, { status: 400 });
-  }
+  const pipedriveController = new PipedriveController(querier);
+  const calendlyController = new CalendlyController(querier);
 
-  const user = userCalendly.users;
-
-  const pipedriveClient = initAPIClient({
-    accessToken: user.accessToken,
-    refreshToken: user.refreshToken,
-  });
-
-  const apiInstance = new ActivityTypesApi(pipedriveClient);
-
-  let data: ActivityType[];
-  try {
-    const res: ActivityTypesResponse = await apiInstance.getActivityTypes();
-    data = res.data;
-  } catch (error) {
-    logError(logger, error, { context: "getActivityTypes", userId });
-    return NextResponse.json(
-      { error: "Could not get Activity types" },
-      { status: 400 },
-    );
-  }
-
-  const calendlyAcc = userCalendly.calendly_accs;
-
-  const calendlyClient = new CalendlyClient({
-    accessToken: calendlyAcc.accessToken,
-    refreshToken: calendlyAcc.refreshToken,
-  });
-
-  const [eventTypesErr, eventTypes] = await calendlyClient.getAllEventTypes();
-
-  if (eventTypesErr) {
-    logError(logger, eventTypesErr.error, {
-      context: "getEventTypes",
-      details: eventTypesErr.error.details,
-      userId,
-    });
-    return NextResponse.json(
-      { error: "Could not get Event types" + eventTypesErr.error },
-      { status: 400 },
-    );
-  }
-
-  const dbEventTypes: NewCalEventType[] = eventTypes.collection.map(
-    (eventType) => {
-      return {
-        name: eventType.name,
-        slug: eventType.slug,
-        scheduleUri: eventType.scheduling_url,
-        uri: eventType.uri,
-        calUserUri: eventType.profile.owner,
-        calUsername: eventType.profile.name,
-        companyId: user.companyId,
-      };
-    },
+  const calintSetup = new CalintSetup(
+    calendlyController,
+    pipedriveController,
+    querier,
   );
 
-  const [addEventTypesErr, _] = await querier.addAllEventTypes(dbEventTypes);
-
-  if (addEventTypesErr) {
-    logError(logger, addEventTypesErr.error, {
-      context: "addEventTypes",
-      details: addEventTypesErr.error.details,
-      userId,
-    });
-    return NextResponse.json(
-      { error: "Could not add Event types" + addEventTypesErr.error },
-      { status: 400 },
-    );
+  const [err, res] =
+    await calintSetup.getAndSaveAllEventTypesAndActivityTypes(userId);
+  if (err) {
+    logError(logger, err, { context: "/settings-modal get route", userId });
+    return NextResponse.json({ error: err.message }, { status: 400 });
   }
 
-  const dbActivityTypes: NewPipedriveActivityType[] = data.map(
-    (activityType) => {
-      return {
-        name: activityType.name,
-        pipedriveId: activityType.id,
-        companyId: user.companyId,
-      };
-    },
-  );
-
-  const [addActivityTypesErr, __] =
-    await querier.addAllActivityTypes(dbActivityTypes);
-
-  if (addActivityTypesErr) {
-    logError(logger, addActivityTypesErr.error, {
-      context: "addActivityTypes",
-      details: addActivityTypesErr.error.details,
-      userId,
-    });
-    return NextResponse.json(
-      { error: "Could not add Activity types" + addActivityTypesErr.error },
-      { status: 400 },
-    );
-  }
-
-  console.log(JSON.stringify(eventTypes));
-  console.log(JSON.stringify(data));
-
-  const responseData: SettingsDataRes = {
-    data: {
-      calendlyEventTypes: eventTypes,
-      pipedriveAcitvityTypes: data,
-    },
-  };
-
-  return NextResponse.json(responseData);
+  return NextResponse.json(res);
 }
-
-export type SettingsDataRes = {
-  data: {
-    calendlyEventTypes: CalendlyResponse;
-    pipedriveAcitvityTypes: ActivityType[];
-  };
-};
