@@ -13,7 +13,7 @@ export const CalendlyEventSidebar: React.FC<CalendlyEventSidebarProps> = ({
 }) => {
   return (
     <>
-      <div className="flex flex-col gap-6 overflow-y-scroll">
+      <div className="flex flex-col gap-6 overflow-x-scroll">
         {eventTypes.map((event, index) => (
           <button
             key={index}
