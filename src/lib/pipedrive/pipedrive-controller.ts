@@ -223,6 +223,10 @@ export class PipedriveController {
       }
 
       this.oauth2.updateToken(this.tokens);
+
+      const newToken = await this.oauth2.tokenRefresh();
+
+      this.tokens = newToken
     }
 
     if (!this.tokens) {
