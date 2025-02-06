@@ -1,11 +1,11 @@
+import { CalEventType } from "@/db/schema";
 import { PipedriveMapping } from "./pipedrive-mapping";
-import { EventType } from "@/lib/calendly-client";
 import { ActivityType } from "pipedrive/v1";
 import { useState } from "react";
 
 type PipedriveSetupProps = {
   activities: ActivityType[];
-  eventType: EventType | null;
+  eventType: CalEventType | null;
 };
 
 type MappingSelections = {

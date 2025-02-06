@@ -226,7 +226,7 @@ export class PipedriveController {
 
       const newToken = await this.oauth2.tokenRefresh();
 
-      this.tokens = newToken
+      this.tokens = newToken;
     }
 
     if (!this.tokens) {

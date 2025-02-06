@@ -2,12 +2,12 @@ import { DatabaseQueries } from "@/db/queries";
 import { CalendlyController } from "./calendly/calendly-controller";
 import createLogger, { logError } from "@/utils/logger";
 import { PipedriveController } from "./pipedrive/pipedrive-controller";
-import { GetEventTypesResponse } from "./calendly-client";
 import { ActivityType } from "pipedrive/v1";
+import { CalEventType } from "@/db/schema";
 
 export type SettingsDataRes = {
   data: {
-    calendlyEventTypes: GetEventTypesResponse;
+    calendlyEventTypes: CalEventType[];
     pipedriveAcitvityTypes: ActivityType[];
   };
 };
@@ -66,7 +66,31 @@ export class CalintSetup {
         pipedriveUser.companyId,
       );
     if (eventTypesErr) {
-      logError(this.logger, eventTypesErr, {
+      logError(this.logger, eventTypesErr.error, {
+        context: "getAndSaveAllEventTypesAndActivityTypes",
+        userId,
+      });
+      return [getUserErr, null] as const;
+    }
+
+    const [eventTypesErrTwo] =
+      await this.calendlyController.findSharedEventTypes(
+        pipedriveUser.id,
+        pipedriveUser.companyId,
+      );
+    if (eventTypesErrTwo) {
+      logError(this.logger, eventTypesErrTwo.error, {
+        context: "getAndSaveAllEventTypesAndActivityTypes",
+        userId,
+      });
+      return [getUserErr, null] as const;
+    }
+
+    const [err, dbEventTypes] = await this.querier.getAllEventTypes(
+      pipedriveUser.companyId,
+    );
+    if (err) {
+      logError(this.logger, err.error, {
         context: "getAndSaveAllEventTypesAndActivityTypes",
         userId,
       });
@@ -75,7 +99,7 @@ export class CalintSetup {
 
     const responseData: SettingsDataRes = {
       data: {
-        calendlyEventTypes: eventTypes,
+        calendlyEventTypes: dbEventTypes,
         pipedriveAcitvityTypes: activityTypes,
       },
     };

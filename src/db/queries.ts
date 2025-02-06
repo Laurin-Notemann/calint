@@ -3,6 +3,7 @@ import db from "./db";
 import { BaseUserMe } from "./pipedrive-types";
 import {
   calendlyAccs,
+  CalEventType,
   calEventTypes,
   companies,
   Company,
@@ -15,11 +16,7 @@ import {
   users,
 } from "./schema";
 import { logDBError, logDBOperation } from "@/utils/db-logger";
-import {
-  GetCurrentUserResponseAllOfData,
-  GetCurrentUserResponseAllOfDataAllOf,
-  TokenResponse,
-} from "pipedrive/v1";
+import { GetCurrentUserResponseAllOfData, TokenResponse } from "pipedrive/v1";
 
 export type PromiseReturn<T> = Promise<
   Readonly<[CalIntError, null] | [null, T]>
@@ -27,6 +24,28 @@ export type PromiseReturn<T> = Promise<
 
 export class DatabaseQueries {
   constructor() {}
+
+  async getAllEventTypes(companyId: string): PromiseReturn<CalEventType[]> {
+    try {
+      logDBOperation("getAllEventTypes", { companyId });
+
+      const res = await db
+        .select()
+        .from(calEventTypes)
+        .where(eq(calEventTypes.companyId, companyId));
+
+      return [null, res];
+    } catch (error) {
+      logDBError("getAllEventTypes", error, { companyId });
+      return [
+        {
+          message: "Database error trying get all event types",
+          error: error as any,
+        },
+        null,
+      ] as const;
+    }
+  }
 
   async addAllEventTypes(eventTypes: NewCalEventType[]) {
     try {
@@ -582,7 +601,10 @@ export class DatabaseQueries {
     }
   }
 
-  async loginWithCalendly(calendlyUri: string, creds: AccountLogin) {
+  async loginWithCalendly(
+    calendlyUri: string,
+    creds: AccountLogin,
+  ): PromiseReturn<boolean> {
     try {
       logDBOperation("loginWithCalendly", { calendlyUri });
       const formattedCreds = {

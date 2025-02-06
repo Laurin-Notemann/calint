@@ -1,9 +1,9 @@
-import { EventType } from "@/lib/calendly-client";
+import { CalEventType } from "@/db/schema";
 
 type CalendlyEventSidebarProps = {
-  eventTypes: EventType[];
-  onEventTypeSelect: (eventType: EventType) => void;
-  selectedEventType: EventType | null;
+  eventTypes: CalEventType[];
+  onEventTypeSelect: (eventType: CalEventType) => void;
+  selectedEventType: CalEventType | null;
 };
 
 export const CalendlyEventSidebar: React.FC<CalendlyEventSidebarProps> = ({
