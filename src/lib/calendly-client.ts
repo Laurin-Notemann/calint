@@ -99,6 +99,72 @@ export class CalendlyClient {
     }
   }
 
+  async getOrganizationMemberships() {
+    const [err, token] = await this.refreshAccessToken();
+    if (err)
+      return [
+        {
+          message: "Could not refresh token",
+          error: new Error("could not refresh token" + err.message) as any,
+        },
+        null,
+      ] as const;
+
+    try {
+      const res = await fetch(
+        "https://api.calendly.com/organization_memberships?organization=" +
+        token.organization +
+        "&count=100",
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + this.accessToken,
+          },
+        },
+      );
+
+      const body: GetOrganizationMembershipResponse = await res.json();
+
+      logAPICall(this.logger, {
+        service: "Calendly",
+        method: "GET",
+        endpoint: "/organization_memberships",
+        status: res.status,
+        statusText: res.statusText,
+        response: body,
+      });
+
+      if (res.status !== 200) {
+        logError(this.logger, body, {
+          operation: "getOrganizationMemberships",
+          status: res.status,
+          statusText: res.statusText,
+        });
+        return [
+          {
+            message: "Could not get OrganizationMemberships",
+            error: body as any,
+          },
+          null,
+        ] as const;
+      }
+
+      return [null, body] as const;
+    } catch (error) {
+      logError(this.logger, error, {
+        operation: "getOrganizationMemberships",
+      });
+      return [
+        {
+          message: "Could not get OrganizationMembership",
+          error: error as any,
+        },
+        null,
+      ] as const;
+    }
+  }
+
   async getAllEventTypes() {
     const [err, token] = await this.refreshAccessToken();
     if (err)
@@ -113,8 +179,8 @@ export class CalendlyClient {
     try {
       const res = await fetch(
         "https://api.calendly.com/event_types?organization=" +
-          token.organization +
-          "&count=100",
+        token.organization +
+        "&count=100",
         {
           method: "GET",
           headers: {
@@ -124,7 +190,7 @@ export class CalendlyClient {
         },
       );
 
-      const body: CalendlyResponse = await res.json();
+      const body: GetEventTypesResponse = await res.json();
 
       logAPICall(this.logger, {
         service: "Calendly",
@@ -404,7 +470,9 @@ export interface CalendlyWebhookSubscription {
   };
 }
 
-export interface CalendlyResponse {
+
+
+export interface GetEventTypesResponse {
   collection: EventType[];
   pagination: Pagination;
 }
@@ -464,4 +532,31 @@ export interface Pagination {
   previous_page: string;
   next_page_token: string;
   previous_page_token: string;
+}
+
+interface OrganizationMembershipUser {
+  uri: string;
+  name: string;
+  slug: string;
+  email: string;
+  scheduling_url: string;
+  timezone: string;
+  avatar_url: string;
+  locale: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface OrganizationMembership {
+  uri: string;
+  role: 'admin' | string; // You might want to add other possible roles
+  user: OrganizationMembershipUser;
+  organization: string;
+  updated_at: string;
+  created_at: string;
+}
+
+interface GetOrganizationMembershipResponse {
+  collection: OrganizationMembership[];
+  pagination: Pagination;
 }

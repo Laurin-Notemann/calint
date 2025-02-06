@@ -2,12 +2,12 @@ import { DatabaseQueries } from "@/db/queries";
 import { CalendlyController } from "./calendly/calendly-controller";
 import createLogger, { logError } from "@/utils/logger";
 import { PipedriveController } from "./pipedrive/pipedrive-controller";
-import { CalendlyResponse } from "./calendly-client";
+import { GetEventTypesResponse } from "./calendly-client";
 import { ActivityType } from "pipedrive/v1";
 
 export type SettingsDataRes = {
   data: {
-    calendlyEventTypes: CalendlyResponse;
+    calendlyEventTypes: GetEventTypesResponse;
     pipedriveAcitvityTypes: ActivityType[];
   };
 };

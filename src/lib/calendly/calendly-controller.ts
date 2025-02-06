@@ -1,5 +1,5 @@
-import { AccountLogin, DatabaseQueries, PromiseReturn } from "@/db/queries";
-import { CalendlyClient, CalendlyResponse } from "../calendly-client";
+import { DatabaseQueries, PromiseReturn } from "@/db/queries";
+import { CalendlyClient, GetEventTypesResponse } from "../calendly-client";
 import createLogger, { logError } from "@/utils/logger";
 import { NewCalEventType } from "@/db/schema";
 
@@ -21,7 +21,7 @@ export class CalendlyController {
   async getAndSaveAllEventTypes(
     userId: number,
     companyId: string,
-  ): PromiseReturn<CalendlyResponse> {
+  ): PromiseReturn<GetEventTypesResponse> {
     if (!this.calClient) {
       const err = new Error(
         "this.calClient was not set (call setCalendlyClient before using getAndSaveAllEventTypes",
@@ -71,6 +71,18 @@ export class CalendlyController {
       });
       return [addEventTypesErr, null] as const;
     }
+
+    const [someErr, res] = await this.calClient.getOrganizationMemberships();
+    if (someErr) {
+      logError(this.logger, someErr.error, {
+        context: "addEventTypes",
+        details: someErr.error.details,
+        userId,
+      });
+      return [someErr, null] as const;
+    }
+
+    this.logger.info(JSON.stringify(res))
 
     return [null, eventTypes] as const;
   }
