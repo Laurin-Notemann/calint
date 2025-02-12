@@ -37,15 +37,17 @@ export class CalendlyController {
   private mapEventTypeToDb(
     eventType: EventType,
     companyId: string,
+    calUserUri?: string,
+    calUsername?: string,
   ) {
-    if (!eventType.profile) {
-      const err = new Error('Event type profile is required');
+    if (!eventType.name || !eventType.slug) {
+      const err = new Error('Event type name and slug are required');
       logError(this.logger, err, { context: "mapEventTypeToDb" });
       return [{ message: "" + err, error: err } as CalIntError, null] as const;
     }
 
-    if (!eventType.name || !eventType.slug) {
-      const err = new Error('Event type name and slug are required');
+    if (!calUserUri && !calUsername && !eventType.profile) {
+      const err = new Error('Either calUserUri and calUsername or eventType.profile must be provided');
       logError(this.logger, err, { context: "mapEventTypeToDb" });
       return [{ message: "" + err, error: err } as CalIntError, null] as const;
     }
@@ -55,8 +57,8 @@ export class CalendlyController {
       slug: eventType.slug,
       scheduleUri: eventType.scheduling_url,
       uri: eventType.uri,
-      calUserUri: eventType.profile.owner,
-      calUsername: eventType.profile.name,
+      calUserUri: calUserUri ? calUserUri : eventType.profile!.owner,
+      calUsername: calUsername ? calUsername : eventType.profile!.name,
       companyId,
     }] as const;
   }
@@ -117,7 +119,7 @@ export class CalendlyController {
       return [err, null] as const;
     }
 
-    return [null, res.collection.map((m) => ({ uri: m.user.uri }))] as const;
+    return [null, res.collection.map((m) => ({ uri: m.user.uri, name: m.user.name }))] as const;
   }
 
   async findSharedEventTypes(userId: number, companyId: string) {
@@ -141,7 +143,7 @@ export class CalendlyController {
 
       const dbEventTypes: NewCalEventType[] = [];
       for (const et of eventTypes.collection) {
-        const [mapErr, dbEventType] = this.mapEventTypeToDb(et, companyId);
+        const [mapErr, dbEventType] = this.mapEventTypeToDb(et, companyId, user.uri, user.name);
         if (mapErr) return [mapErr, null];
         dbEventTypes.push(dbEventType);
       }
