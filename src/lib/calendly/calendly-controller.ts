@@ -40,7 +40,7 @@ export class CalendlyController {
     calUserUri?: string,
     calUsername?: string,
   ) {
-    if (!eventType.name || !eventType.slug) {
+    if (!eventType.name) {
       const err = new Error('Event type name and slug are required');
       logError(this.logger, err, { context: "mapEventTypeToDb" });
       return [{ message: "" + err, error: err } as CalIntError, null] as const;
@@ -54,7 +54,7 @@ export class CalendlyController {
 
     return [null, {
       name: eventType.name,
-      slug: eventType.slug,
+      slug: eventType.slug || "",
       scheduleUri: eventType.scheduling_url,
       uri: eventType.uri,
       calUserUri: calUserUri || eventType.profile?.owner || '',
