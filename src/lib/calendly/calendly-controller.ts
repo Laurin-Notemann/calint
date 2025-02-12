@@ -57,8 +57,8 @@ export class CalendlyController {
       slug: eventType.slug,
       scheduleUri: eventType.scheduling_url,
       uri: eventType.uri,
-      calUserUri: calUserUri ? calUserUri : eventType.profile!.owner,
-      calUsername: calUsername ? calUsername : eventType.profile!.name,
+      calUserUri: calUserUri || eventType.profile?.owner || '',
+      calUsername: calUsername || eventType.profile?.name || '',
       companyId,
     }] as const;
   }
