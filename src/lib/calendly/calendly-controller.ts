@@ -37,8 +37,20 @@ export class CalendlyController {
   private mapEventTypeToDb(
     eventType: EventType,
     companyId: string,
-  ): NewCalEventType {
-    return {
+  ) {
+    if (!eventType.profile) {
+      const err = new Error('Event type profile is required');
+      logError(this.logger, err, { context: "mapEventTypeToDb" });
+      return [{ message: "" + err, error: err } as CalIntError, null] as const;
+    }
+
+    if (!eventType.name || !eventType.slug) {
+      const err = new Error('Event type name and slug are required');
+      logError(this.logger, err, { context: "mapEventTypeToDb" });
+      return [{ message: "" + err, error: err } as CalIntError, null] as const;
+    }
+
+    return [null, {
       name: eventType.name,
       slug: eventType.slug,
       scheduleUri: eventType.scheduling_url,
@@ -46,7 +58,7 @@ export class CalendlyController {
       calUserUri: eventType.profile.owner,
       calUsername: eventType.profile.name,
       companyId,
-    };
+    }] as const;
   }
 
   private async saveEventTypes(eventTypes: NewCalEventType[], userId?: number) {
@@ -79,9 +91,12 @@ export class CalendlyController {
       return [eventTypesErr, null];
     }
 
-    const dbEventTypes = eventTypes.collection.map((et) =>
-      this.mapEventTypeToDb(et, companyId),
-    );
+    const dbEventTypes: NewCalEventType[] = [];
+    for (const et of eventTypes.collection) {
+      const [mapErr, dbEventType] = this.mapEventTypeToDb(et, companyId);
+      if (mapErr) return [mapErr, null];
+      dbEventTypes.push(dbEventType);
+    }
 
     const [saveErr] = await this.saveEventTypes(dbEventTypes, userId);
     if (saveErr) return [saveErr, null];
@@ -124,11 +139,14 @@ export class CalendlyController {
         return [eventErr, null] as const;
       }
 
-      const dbEventTypesmap = eventTypes.collection.map((et) =>
-        this.mapEventTypeToDb(et, companyId),
-      );
+      const dbEventTypes: NewCalEventType[] = [];
+      for (const et of eventTypes.collection) {
+        const [mapErr, dbEventType] = this.mapEventTypeToDb(et, companyId);
+        if (mapErr) return [mapErr, null];
+        dbEventTypes.push(dbEventType);
+      }
 
-      const [saveErr] = await this.saveEventTypes(dbEventTypesmap, userId);
+      const [saveErr] = await this.saveEventTypes(dbEventTypes, userId);
       if (saveErr) return [saveErr, null] as const;
     }
 

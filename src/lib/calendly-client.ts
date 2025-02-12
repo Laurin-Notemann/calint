@@ -287,53 +287,53 @@ export interface GetEventTypesResponse {
   pagination: Pagination;
 }
 
-export interface EventType {
-  uri: string;
-  name: string;
-  active: boolean;
-  booking_method: string;
-  slug: string;
-  scheduling_url: string;
-  duration: number;
-  duration_options: number[];
-  kind: string;
-  pooling_type: string;
-  type: string;
-  color: string;
-  created_at: string;
-  updated_at: string;
-  internal_note: string;
-  description_plain: string;
-  description_html: string;
-  profile: Profile;
-  secret: boolean;
-  deleted_at: null | string;
-  admin_managed: boolean;
-  locations: Location[];
-  position: number;
-  custom_questions: CustomQuestion[];
-}
-
-export interface Profile {
-  type: string;
+interface Profile {
+  type: 'User' | 'Team';
   name: string;
   owner: string;
 }
 
-export interface Location {
-  kind: string;
-  phone_number: number;
-  additional_info: string;
-}
-
-export interface CustomQuestion {
+interface CustomQuestion {
   name: string;
-  type: "string" | "text" | "single_select" | "multi_select" | "phone_number";
+  type: 'string' | 'text' | 'phone_number' | 'single_select' | 'multi_select';
   position: number;
   enabled: boolean;
   required: boolean;
   answer_choices: string[];
   include_other: boolean;
+}
+
+interface Location {
+  kind: string;
+  phone_number: number;
+  additional_info: string;
+}
+
+export interface EventType {
+  uri: string;
+  name: string | null;
+  active: boolean;
+  slug: string | null;
+  scheduling_url: string;
+  duration: number;
+  duration_options: number[] | null;
+  kind: 'solo' | 'group';
+  pooling_type: 'round_robin' | 'collective' | 'multi_pool' | null;
+  type: 'StandardEventType' | 'AdhocEventType';
+  color: string;
+  created_at: string;
+  updated_at: string;
+  internal_note: string | null;
+  description_plain: string | null;
+  description_html: string | null;
+  profile: Profile | null;
+  secret: boolean;
+  booking_method: 'instant' | 'poll';
+  custom_questions: CustomQuestion[];
+  deleted_at: string | null;
+  admin_managed: boolean;
+  locations: Location[] | null;
+  position: number;
 }
 
 export interface Pagination {
