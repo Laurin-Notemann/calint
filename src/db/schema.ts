@@ -95,6 +95,7 @@ export const calEventTypes = pgTable("cal_event_types", {
 export const pipedriveActivityTypes = pgTable("pipedrive_activity_types", {
   id: uuid("id").primaryKey().defaultRandom().notNull(),
   name: text("name").notNull(),
+  pipedriveId: integer("pipedrive_id").notNull(),
   companyId: uuid("company_id")
     .notNull()
     .references(() => companies.id, {

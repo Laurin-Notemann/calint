@@ -1,4 +1,4 @@
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import db from "./db";
 import {
   calendlyAccs,
@@ -22,7 +22,7 @@ export type PromiseReturn<T> = Promise<
 >;
 
 export class DatabaseQueries {
-  constructor() {}
+  constructor() { }
 
   async getAllEventTypes(companyId: string): PromiseReturn<CalEventType[]> {
     try {
@@ -180,14 +180,17 @@ export class DatabaseQueries {
         .from(pipedriveActivityTypes)
         .where(
           inArray(
-            pipedriveActivityTypes.pipedriveId,
-            activityTypes.map((at) => at.pipedriveId),
+            sql`(${pipedriveActivityTypes.pipedriveId}, ${pipedriveActivityTypes.companyId})`,
+            activityTypes.map((at) => [at.pipedriveId, at.companyId]),
           ),
         );
 
-      const existingIds = new Set(existingTypes.map((at) => at.pipedriveId));
+      const existingIdPairs = new Set(
+        existingTypes.map((at) => `${at.pipedriveId}-${at.companyId}`)
+      );
+
       const newActivityTypes = activityTypes.filter(
-        (at) => !existingIds.has(at.pipedriveId),
+        (at) => !existingIdPairs.has(`${at.pipedriveId}-${at.companyId}`)
       );
 
       return [
