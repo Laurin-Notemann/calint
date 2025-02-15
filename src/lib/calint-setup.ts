@@ -60,7 +60,7 @@ export class CalintSetup {
       calAcc.refreshToken,
     );
 
-    const [eventTypesErr, eventTypes] =
+    const [eventTypesErr] =
       await this.calendlyController.getAndSaveAllEventTypes(
         pipedriveUser.id,
         pipedriveUser.companyId,
