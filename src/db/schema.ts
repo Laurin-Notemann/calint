@@ -1,6 +1,7 @@
 import { relations, sql } from "drizzle-orm";
 import {
   integer,
+  pgEnum,
   pgTable,
   text,
   timestamp,
@@ -94,13 +95,38 @@ export const calEventTypes = pgTable("cal_event_types", {
 export const pipedriveActivityTypes = pgTable("pipedrive_activity_types", {
   id: uuid("id").primaryKey().defaultRandom().notNull(),
   name: text("name").notNull(),
-  pipedriveId: integer("pipedrive_id").notNull().unique(),
   companyId: uuid("company_id")
     .notNull()
     .references(() => companies.id, {
       onDelete: "cascade",
     }),
 });
+
+export const typeMappings = pgEnum("type_mappings", [
+  "created",
+  "rescheduled",
+  "cancelled",
+  "noshow",
+]);
+
+export const eventActivityTypesMapping = pgTable(
+  "event_activity_types_mapping",
+  {
+    id: uuid("id").primaryKey().defaultRandom().notNull(),
+    type: typeMappings().notNull(),
+    calendlyEventTypeId: uuid("calendly_event_type_id")
+      .notNull()
+      .references(() => calEventTypes.id, {
+        onDelete: "cascade",
+      }),
+    pipedriveActivityTypeId: uuid("pipedrive_activity_type_id").references(
+      () => pipedriveActivityTypes.id,
+      {
+        onDelete: "cascade",
+      },
+    ),
+  },
+);
 
 export type Company = typeof companies.$inferSelect;
 export type NewCompany = typeof companies.$inferInsert;
