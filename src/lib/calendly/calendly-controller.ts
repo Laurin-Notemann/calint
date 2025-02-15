@@ -130,7 +130,7 @@ export class CalendlyController {
     if (usersErr) return [usersErr, null] as const;
 
     for (const user of users) {
-      this.logger.debug("User: " + JSON.stringify(user))
+      this.logger.warn("User: " + JSON.stringify(user))
       const [eventErr, eventTypes] = await client.getEventTypesByUserId(
         user.uri,
       );
