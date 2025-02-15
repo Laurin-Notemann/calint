@@ -1,6 +1,6 @@
 import { DatabaseQueries } from "@/db/queries";
 import { CalendlyController } from "./calendly/calendly-controller";
-import createLogger, { logError } from "@/utils/logger";
+import createLogger, { logElapsedTime, logError } from "@/utils/logger";
 import { PipedriveController } from "./pipedrive/pipedrive-controller";
 import { ActivityType } from "pipedrive/v1";
 import { CalEventType } from "@/db/schema";
@@ -28,6 +28,8 @@ export class CalintSetup {
   }
 
   async getAndSaveAllEventTypesAndActivityTypes(userId: number) {
+    const totalStartTime = Date.now();
+
     const [getUserErr, user] = await this.querier.getUserAndCalendlyAcc(userId);
     if (getUserErr) {
       logError(this.logger, getUserErr, {
@@ -60,24 +62,17 @@ export class CalintSetup {
       calAcc.refreshToken,
     );
 
-    const [eventTypesErr] =
-      await this.calendlyController.getAndSaveAllEventTypes(
-        pipedriveUser.id,
-        pipedriveUser.companyId,
-      );
-    if (eventTypesErr) {
-      logError(this.logger, eventTypesErr.error, {
-        context: "getAndSaveAllEventTypesAndActivityTypes",
-        userId,
-      });
-      return [getUserErr, null] as const;
-    }
-
+    const sharedEventTypesStartTime = Date.now();
     const [eventTypesErrTwo] =
       await this.calendlyController.findSharedEventTypes(
         pipedriveUser.id,
         pipedriveUser.companyId,
       );
+    logElapsedTime(
+      this.logger,
+      sharedEventTypesStartTime,
+      "Finding shared event types",
+    );
     if (eventTypesErrTwo) {
       logError(this.logger, eventTypesErrTwo.error, {
         context: "getAndSaveAllEventTypesAndActivityTypes",
@@ -103,6 +98,7 @@ export class CalintSetup {
         pipedriveAcitvityTypes: activityTypes,
       },
     };
+    logElapsedTime(this.logger, totalStartTime, "Total execution time");
 
     return [null, responseData] as const;
   }

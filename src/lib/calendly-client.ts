@@ -1,7 +1,12 @@
 import { CalendlyUser, CalIntError, querier } from "@/db/queries";
 import { env } from "./env";
 import dayjs from "dayjs";
-import { createLogger, logAPICall, logError } from "@/utils/logger";
+import {
+  createLogger,
+  logAPICall,
+  logElapsedTime,
+  logError,
+} from "@/utils/logger";
 
 export class CalendlyClient {
   private logger = createLogger("CalendlyClient");
@@ -9,6 +14,9 @@ export class CalendlyClient {
   private refreshToken: string;
   private baseUrl = "https://api.calendly.com";
   private authUrl = "https://auth.calendly.com";
+  private lastTokenRefresh: number = 0;
+  private readonly TOKEN_REFRESH_INTERVAL = 10000;
+  private organization: string = "";
 
   constructor({
     accessToken,
@@ -144,6 +152,13 @@ export class CalendlyClient {
   }
 
   async refreshAccessToken() {
+    const now = Date.now();
+    if (now - this.lastTokenRefresh < this.TOKEN_REFRESH_INTERVAL) {
+      this.logger.info(`Token refresh skipped: too soon since last refresh`);
+      return [null, null] as const;
+    }
+
+    const startTime = now;
     const [err, data] = await this.makeRequest<GetAccessTokenRes>(
       "/oauth/token",
       {
@@ -175,11 +190,16 @@ export class CalendlyClient {
     }
 
     this.updateCalendlyTokens(data);
+    this.organization = data.organization;
+    this.lastTokenRefresh = now;
+
+    logElapsedTime(this.logger, startTime, "Refreshing access token");
+
     return [null, data] as const;
   }
 
   async getOrganizationMemberships() {
-    const [err, token] = await this.refreshAccessToken();
+    const [err] = await this.refreshAccessToken();
     if (err) return [err, null] as const;
 
     return await this.makeRequest<GetOrganizationMembershipResponse>(
@@ -187,7 +207,7 @@ export class CalendlyClient {
       {
         method: "GET",
         params: {
-          organization: token.organization,
+          organization: this.organization,
           count: "100",
         },
       },
@@ -195,19 +215,26 @@ export class CalendlyClient {
   }
 
   async getAllEventTypes() {
-    const [err, token] = await this.refreshAccessToken();
+    const [err] = await this.refreshAccessToken();
     if (err) return [err, null] as const;
 
-    return await this.makeRequest<GetEventTypesResponse>("/event_types", {
-      method: "GET",
-      params: {
-        organization: token.organization,
-        count: "100",
+    const result = await this.makeRequest<GetEventTypesResponse>(
+      "/event_types",
+      {
+        method: "GET",
+        params: {
+          organization: this.organization,
+          count: "100",
+        },
       },
-    });
+    );
+    return result;
   }
 
   async getEventTypesByUserId(userId: string) {
+    const [err] = await this.refreshAccessToken();
+    if (err) return [err, null] as const;
+
     return await this.makeRequest<GetEventTypesResponse>("/event_types", {
       method: "GET",
       params: {
@@ -247,6 +274,7 @@ export class CalendlyClient {
   private updateCalendlyTokens(tokens: GetAccessTokenRes) {
     this.accessToken = tokens.access_token;
     this.refreshToken = tokens.refresh_token;
+    this.organization = tokens.organization;
   }
 }
 
@@ -288,14 +316,14 @@ export interface GetEventTypesResponse {
 }
 
 interface Profile {
-  type: 'User' | 'Team';
+  type: "User" | "Team";
   name: string;
   owner: string;
 }
 
 interface CustomQuestion {
   name: string;
-  type: 'string' | 'text' | 'phone_number' | 'single_select' | 'multi_select';
+  type: "string" | "text" | "phone_number" | "single_select" | "multi_select";
   position: number;
   enabled: boolean;
   required: boolean;
@@ -317,9 +345,9 @@ export interface EventType {
   scheduling_url: string;
   duration: number;
   duration_options: number[] | null;
-  kind: 'solo' | 'group';
-  pooling_type: 'round_robin' | 'collective' | 'multi_pool' | null;
-  type: 'StandardEventType' | 'AdhocEventType';
+  kind: "solo" | "group";
+  pooling_type: "round_robin" | "collective" | "multi_pool" | null;
+  type: "StandardEventType" | "AdhocEventType";
   color: string;
   created_at: string;
   updated_at: string;
@@ -328,7 +356,7 @@ export interface EventType {
   description_html: string | null;
   profile: Profile | null;
   secret: boolean;
-  booking_method: 'instant' | 'poll';
+  booking_method: "instant" | "poll";
   custom_questions: CustomQuestion[];
   deleted_at: string | null;
   admin_managed: boolean;

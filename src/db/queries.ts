@@ -1,6 +1,5 @@
 import { eq, inArray } from "drizzle-orm";
 import db from "./db";
-import { BaseUserMe } from "./pipedrive-types";
 import {
   calendlyAccs,
   CalEventType,

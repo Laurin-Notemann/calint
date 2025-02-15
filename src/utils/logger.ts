@@ -17,6 +17,18 @@ export const logError = (logger: pino.Logger, error: any, context?: object) => {
   logger.error(errorObj);
 };
 
+export function logElapsedTime(
+  logger: pino.Logger,
+  startTime: number,
+  operation: string,
+) {
+  const elapsedTime = Date.now() - startTime;
+  logger.warn(
+    { type: "performance", operation, duration: elapsedTime },
+    `${operation} took ${elapsedTime}ms`,
+  );
+}
+
 export const logAPICall = (
   logger: pino.Logger,
   {
