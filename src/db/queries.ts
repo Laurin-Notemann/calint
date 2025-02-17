@@ -75,149 +75,115 @@ export class DatabaseQueries {
   }
 
   async getAllEventTypes(companyId: string): PromiseReturn<CalEventType[]> {
-    try {
-      logDBOperation("getAllEventTypes", { companyId });
-      const res = await db
-        .select()
-        .from(calEventTypes)
-        .where(eq(calEventTypes.companyId, companyId));
-      return [null, res] as const;
-    } catch (error) {
-      return [
-        this.createError(ERROR_MESSAGES.DB_OPERATION_ERROR, error, {
-          operation: "getAllEventTypes",
-          companyId,
-        }),
-        null,
-      ] as const;
-    }
+    return this.withErrorHandling(
+      async () => {
+        return await db
+          .select()
+          .from(calEventTypes)
+          .where(eq(calEventTypes.companyId, companyId));
+      },
+      "getAllEventTypes",
+      { companyId },
+    );
   }
 
   async addAllEventTypes(
     eventTypes: NewCalEventType[],
   ): PromiseReturn<{ message: string; added: number; skipped?: number }> {
-    try {
-      logDBOperation("addAllEventTypes", { eventTypes });
-      const [checkError, result] =
-        await this.checkExistingEventTypes(eventTypes);
+    return this.withErrorHandling(
+      async () => {
+        const [checkError, result] =
+          await this.checkExistingEventTypes(eventTypes);
 
-      if (checkError) {
-        return [checkError, null] as const;
-      }
+        if (checkError) {
+          throw checkError;
+        }
 
-      if (!result.new.length) {
-        return [
-          null,
-          {
+        if (!result.new.length) {
+          return {
             message: ERROR_MESSAGES.ALL_EVENT_TYPES_EXIST,
             added: 0,
-          },
-        ] as const;
-      }
+          };
+        }
 
-      await db.insert(calEventTypes).values(result.new);
+        await db.insert(calEventTypes).values(result.new);
 
-      return [
-        null,
-        {
+        return {
           message: ERROR_MESSAGES.EVENT_TYPES_ADDED_SUCCESS,
           added: result.new.length,
           skipped: result.existing.length,
-        },
-      ] as const;
-    } catch (error) {
-      return [
-        this.createError(ERROR_MESSAGES.DB_OPERATION_ERROR, error, {
-          operation: "addAllEventTypes",
-          eventTypes,
-        }),
-        null,
-      ] as const;
-    }
+        };
+      },
+      "addAllEventTypes",
+      { eventTypes },
+    );
   }
 
-  async checkExistingEventTypes(eventTypes: NewCalEventType[]): PromiseReturn<{
+  async checkExistingEventTypes(
+    eventTypes: NewCalEventType[],
+  ): PromiseReturn<{
     existing: CalEventType[];
     new: NewCalEventType[];
     hasConflicts: boolean;
   }> {
-    try {
-      logDBOperation("checkExistingEventTypes", { eventTypes });
-      const existingTypes = await db
-        .select()
-        .from(calEventTypes)
-        .where(
-          inArray(
-            calEventTypes.uri,
-            eventTypes.map((et) => et.uri),
-          ),
+    return this.withErrorHandling(
+      async () => {
+        const existingTypes = await db
+          .select()
+          .from(calEventTypes)
+          .where(
+            inArray(
+              calEventTypes.uri,
+              eventTypes.map((et) => et.uri),
+            ),
+          );
+
+        const existingNames = new Set(existingTypes.map((et) => et.name));
+        const newEventTypes = eventTypes.filter(
+          (et) => !existingNames.has(et.name),
         );
 
-      const existingNames = new Set(existingTypes.map((et) => et.name));
-      const newEventTypes = eventTypes.filter(
-        (et) => !existingNames.has(et.name),
-      );
-
-      return [
-        null,
-        {
+        return {
           existing: existingTypes,
           new: newEventTypes,
           hasConflicts: existingTypes.length > 0,
-        },
-      ] as const;
-    } catch (error) {
-      return [
-        this.createError(ERROR_MESSAGES.DB_OPERATION_ERROR, error, {
-          operation: "checkExistingEventTypes",
-          eventTypes,
-        }),
-        null,
-      ] as const;
-    }
+        };
+      },
+      "checkExistingEventTypes",
+      { eventTypes },
+    );
   }
 
   async addAllActivityTypes(
     activityTypes: NewPipedriveActivityType[],
   ): PromiseReturn<{ message: string; added: number; skipped?: number }> {
-    try {
-      logDBOperation("addAllActivityTypes", { activityTypes });
-      const [checkError, result] =
-        await this.checkExistingActivityTypes(activityTypes);
+    return this.withErrorHandling(
+      async () => {
+        const [checkError, result] =
+          await this.checkExistingActivityTypes(activityTypes);
 
-      if (checkError) {
-        return [checkError, null] as const;
-      }
+        if (checkError) {
+          throw checkError;
+        }
 
-      if (!result.new.length) {
-        return [
-          null,
-          {
+        if (!result.new.length) {
+          return {
             message: ERROR_MESSAGES.ALL_ACTIVITY_TYPES_EXIST,
             added: 0,
-          },
-        ] as const;
-      }
+          };
+        }
 
-      await db.insert(pipedriveActivityTypes).values(result.new);
+        await db.insert(pipedriveActivityTypes).values(result.new);
 
-      return [
-        null,
-        {
+        return {
           message: ERROR_MESSAGES.ACTIVITY_TYPES_ADDED_SUCCESS,
           added: result.new.length,
           skipped: result.existing.length,
-        },
-      ] as const;
-    } catch (error) {
-      return [
-        this.createError(ERROR_MESSAGES.DB_OPERATION_ERROR, error, {
-          operation: "addAllActivityTypes",
-          activityTypes,
-        }),
-        null,
-      ] as const;
-    }
+        };
+      },
+      "addAllActivityTypes",
+      { activityTypes },
+    );
   }
 
   async checkExistingActivityTypes(
@@ -227,265 +193,171 @@ export class DatabaseQueries {
     new: NewPipedriveActivityType[];
     hasConflicts: boolean;
   }> {
-    try {
-      logDBOperation("checkExistingActivityTypes", { activityTypes });
-      const existingTypes = await db
-        .select()
-        .from(pipedriveActivityTypes)
-        .where(
-          inArray(
-            sql`(${pipedriveActivityTypes.pipedriveId}, ${pipedriveActivityTypes.companyId})`,
-            activityTypes.map((at) => [at.pipedriveId, at.companyId]),
-          ),
+    return this.withErrorHandling(
+      async () => {
+        const existingTypes = await db
+          .select()
+          .from(pipedriveActivityTypes)
+          .where(
+            inArray(
+              sql`(${pipedriveActivityTypes.pipedriveId}, ${pipedriveActivityTypes.companyId})`,
+              activityTypes.map((at) => [at.pipedriveId, at.companyId]),
+            ),
+          );
+
+        const existingIdPairs = new Set(
+          existingTypes.map((at) => `${at.pipedriveId}-${at.companyId}`),
         );
 
-      const existingIdPairs = new Set(
-        existingTypes.map((at) => `${at.pipedriveId}-${at.companyId}`),
-      );
+        const newActivityTypes = activityTypes.filter(
+          (at) => !existingIdPairs.has(`${at.pipedriveId}-${at.companyId}`),
+        );
 
-      const newActivityTypes = activityTypes.filter(
-        (at) => !existingIdPairs.has(`${at.pipedriveId}-${at.companyId}`),
-      );
-
-      return [
-        null,
-        {
+        return {
           existing: existingTypes,
           new: newActivityTypes,
           hasConflicts: existingTypes.length > 0,
-        },
-      ] as const;
-    } catch (error) {
-      return [
-        this.createError(ERROR_MESSAGES.DB_OPERATION_ERROR, error, {
-          operation: "checkExistingActivityTypes",
-          activityTypes,
-        }),
-        null,
-      ] as const;
-    }
+        };
+      },
+      "checkExistingActivityTypes",
+      { activityTypes },
+    );
   }
 
   async getUser(userId: number): PromiseReturn<User> {
-    try {
-      logDBOperation("getUser", { userId });
-      const user = await db.select().from(users).where(eq(users.id, userId));
+    return this.withErrorHandling(
+      async () => {
+        const user = await db.select().from(users).where(eq(users.id, userId));
 
-      if (user.length !== 1) {
-        return [
-          this.createError(
-            ERROR_MESSAGES.USER_NOT_FOUND,
-            new Error("No user found"),
-            { userId },
-          ),
-          null,
-        ] as const;
-      }
+        if (user.length !== 1) {
+          throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+        }
 
-      return [null, user[0]] as const;
-    } catch (error) {
-      return [
-        this.createError(ERROR_MESSAGES.DB_OPERATION_ERROR, error, {
-          operation: "getUser",
-          userId,
-        }),
-        null,
-      ] as const;
-    }
+        return user[0];
+      },
+      "getUser",
+      { userId },
+    );
   }
 
   async getUserAndCalendlyAcc(userId: number): PromiseReturn<UserCalendly> {
-    try {
-      logDBOperation("getUserAndCalendlyAcc", { userId });
-      const res = await db
-        .select()
-        .from(users)
-        .innerJoin(calendlyAccs, eq(users.id, calendlyAccs.userId))
-        .where(eq(users.id, userId));
+    return this.withErrorHandling(
+      async () => {
+        const res = await db
+          .select()
+          .from(users)
+          .innerJoin(calendlyAccs, eq(users.id, calendlyAccs.userId))
+          .where(eq(users.id, userId));
 
-      if (res.length != 1) {
-        return [
-          this.createError(
-            ERROR_MESSAGES.USER_NOT_FOUND,
-            new Error("No user or calendly acc found"),
-            { userId },
-          ),
-          null,
-        ] as const;
-      }
+        if (res.length != 1) {
+          throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+        }
 
-      return [null, res[0]] as const;
-    } catch (error) {
-      return [
-        this.createError(ERROR_MESSAGES.DB_OPERATION_ERROR, error, {
-          operation: "getUserAndCalendlyAcc",
-          userId,
-        }),
-        null,
-      ] as const;
-    }
+        return res[0];
+      },
+      "getUserAndCalendlyAcc",
+      { userId },
+    );
   }
 
   async getCompanyById(companyId: string): PromiseReturn<Company> {
-    try {
-      logDBOperation("getCompanyById", { companyId });
-      const company = await db
-        .select()
-        .from(companies)
-        .where(eq(companies.id, companyId));
+    return this.withErrorHandling(
+      async () => {
+        const company = await db
+          .select()
+          .from(companies)
+          .where(eq(companies.id, companyId));
 
-      if (company.length < 1) {
-        return [
-          this.createError(
-            ERROR_MESSAGES.COMPANY_NOT_FOUND,
-            new Error("Company not found"),
-            { companyId },
-          ),
-          null,
-        ] as const;
-      } else if (company.length > 1) {
-        return [
-          this.createError(
-            ERROR_MESSAGES.TOO_MANY_COMPANIES_FOUND,
-            new Error("Too many companies found"),
-            { companyId },
-          ),
-          null,
-        ] as const;
-      }
+        if (company.length < 1) {
+          throw new Error(ERROR_MESSAGES.COMPANY_NOT_FOUND);
+        } else if (company.length > 1) {
+          throw new Error(ERROR_MESSAGES.TOO_MANY_COMPANIES_FOUND);
+        }
 
-      return [null, company[0]] as const;
-    } catch (error) {
-      return [
-        this.createError(ERROR_MESSAGES.DB_OPERATION_ERROR, error, {
-          operation: "getCompanyById",
-          companyId,
-        }),
-        null,
-      ] as const;
-    }
+        return company[0];
+      },
+      "getCompanyById",
+      { companyId },
+    );
   }
 
   async getCompany(companyDomain: string): PromiseReturn<Company> {
-    try {
-      logDBOperation("getCompany", { companyDomain });
-      const company = await db
-        .select()
-        .from(companies)
-        .where(eq(companies.domain, companyDomain));
+    return this.withErrorHandling(
+      async () => {
+        const company = await db
+          .select()
+          .from(companies)
+          .where(eq(companies.domain, companyDomain));
 
-      if (company.length < 1) {
-        return [
-          this.createError(
-            ERROR_MESSAGES.COMPANY_NOT_FOUND,
-            new Error("Company not found"),
-            { companyDomain },
-          ),
-          null,
-        ] as const;
-      } else if (company.length > 1) {
-        return [
-          this.createError(
-            ERROR_MESSAGES.TOO_MANY_COMPANIES_FOUND,
-            new Error("Too many companies found"),
-            { companyDomain },
-          ),
-          null,
-        ] as const;
-      }
+        if (company.length < 1) {
+          throw new Error(ERROR_MESSAGES.COMPANY_NOT_FOUND);
+        } else if (company.length > 1) {
+          throw new Error(ERROR_MESSAGES.TOO_MANY_COMPANIES_FOUND);
+        }
 
-      return [null, company[0]] as const;
-    } catch (error) {
-      return [
-        this.createError(ERROR_MESSAGES.DB_OPERATION_ERROR, error, {
-          operation: "getCompany",
-          companyDomain,
-        }),
-        null,
-      ] as const;
-    }
+        return company[0];
+      },
+      "getCompany",
+      { companyDomain },
+    );
   }
 
   async createCompany(companyValues: NewCompany): PromiseReturn<Company> {
-    try {
-      logDBOperation("createCompany", { companyValues });
-      const company = await db
-        .insert(companies)
-        .values(companyValues)
-        .returning();
+    return this.withErrorHandling(
+      async () => {
+        const company = await db
+          .insert(companies)
+          .values(companyValues)
+          .returning();
 
-      if (company.length !== 1) {
-        return [
-          this.createError(
-            ERROR_MESSAGES.COMPANY_CREATION_ERROR,
-            new Error("Error when creating company"),
-            { companyValues },
-          ),
-          null,
-        ] as const;
-      }
+        if (company.length !== 1) {
+          throw new Error(ERROR_MESSAGES.COMPANY_CREATION_ERROR);
+        }
 
-      return [null, company[0]] as const;
-    } catch (error) {
-      return [
-        this.createError(ERROR_MESSAGES.DB_OPERATION_ERROR, error, {
-          operation: "createCompany",
-          companyValues,
-        }),
-        null,
-      ] as const;
-    }
+        return company[0];
+      },
+      "createCompany",
+      { companyValues },
+    );
   }
 
   async createCompanyOrReturnCompany(
     companyValues: NewCompany,
   ): PromiseReturn<Company> {
-    try {
-      logDBOperation("createCompanyOrReturnCompany", { companyValues });
-      const [_, company] = await this.getCompany(companyValues.domain);
+    return this.withErrorHandling(
+      async () => {
+        const [error, company] = await this.getCompany(companyValues.domain);
 
-      if (company) return [null, company] as const;
+        if (error) throw error;
+        if (company) return company;
 
-      return await this.createCompany(companyValues);
-    } catch (error) {
-      return [
-        this.createError(ERROR_MESSAGES.DB_OPERATION_ERROR, error, {
-          operation: "createCompanyOrReturnCompany",
-          companyValues,
-        }),
-        null,
-      ] as const;
-    }
+        const [createError, createdCompany] =
+          await this.createCompany(companyValues);
+        if (createError) throw createError;
+        return createdCompany;
+      },
+      "createCompanyOrReturnCompany",
+      { companyValues },
+    );
   }
 
   async updateCompany(company: Company): PromiseReturn<Company> {
-    try {
-      logDBOperation("updateCompany", { company });
-      const [err, updatedCompany] = await db
-        .update(companies)
-        .set(company)
-        .where(eq(companies.id, company.id));
+    return this.withErrorHandling(
+      async () => {
+        const [err, updatedCompany] = await db
+          .update(companies)
+          .set(company)
+          .where(eq(companies.id, company.id));
 
-      if (err) {
-        return [
-          this.createError(ERROR_MESSAGES.DB_OPERATION_ERROR, err, {
-            operation: "updateCompany",
-            company,
-          }),
-          null,
-        ] as const;
-      }
+        if (err) {
+          throw err;
+        }
 
-      return [null, updatedCompany] as const;
-    } catch (error) {
-      return [
-        this.createError(ERROR_MESSAGES.DB_OPERATION_ERROR, error, {
-          operation: "updateCompany",
-          company,
-        }),
-        null,
-      ] as const;
-    }
+        return updatedCompany;
+      },
+      "updateCompany",
+      { company },
+    );
   }
 
   async createUser(
@@ -499,85 +371,57 @@ export class DatabaseQueries {
       api_domain: apiDomain,
     }: TokenResponse,
   ): Promise<Readonly<[null, boolean] | [CalIntError, null]>> {
-    try {
-      logDBOperation("createUser", { userId: user.id });
+    return this.withErrorHandling(
+      async () => {
+        if (!user.id || !user.name) {
+          throw new Error(ERROR_MESSAGES.MISSING_REQUIRED_FIELDS);
+        }
 
-      if (!user.id || !user.name) {
-        return [
-          this.createError(
-            ERROR_MESSAGES.MISSING_REQUIRED_FIELDS,
-            new Error("id and name are required"),
-            { user },
-          ),
-          null,
-        ] as const;
-      }
+        const [error, company] = await this.createCompanyOrReturnCompany({
+          name: user.company_name,
+          domain: user.company_domain!,
+        });
 
-      const [error, company] = await this.createCompanyOrReturnCompany({
-        name: user.company_name,
-        domain: user.company_domain!,
-      });
+        if (error) throw error;
 
-      if (error) {
-        return [error, null] as const;
-      }
+        const createdUserList = await db
+          .insert(users)
+          .values({
+            id: user.id,
+            name: user.name,
+            accessToken,
+            refreshToken,
+            expiresIn,
+            tokenType,
+            scope,
+            apiDomain,
+            companyId: company.id,
+          })
+          .returning();
 
-      const createdUserList = await db
-        .insert(users)
-        .values({
-          id: user.id,
-          name: user.name,
-          accessToken,
-          refreshToken,
-          expiresIn,
-          tokenType,
-          scope,
-          apiDomain,
-          companyId: company.id,
-        })
-        .returning();
+        if (createdUserList.length < 1) {
+          throw new Error(ERROR_MESSAGES.USER_CREATION_FAILED);
+        }
 
-      if (createdUserList.length < 1) {
-        return [
-          this.createError(
-            ERROR_MESSAGES.USER_CREATION_FAILED,
-            new Error("No user created"),
-            { user },
-          ),
-          null,
-        ] as const;
-      }
-
-      return [null, true] as const;
-    } catch (error) {
-      return [
-        this.createError(ERROR_MESSAGES.DB_OPERATION_ERROR, error, {
-          operation: "createUser",
-          user,
-        }),
-        null,
-      ] as const;
-    }
+        return true;
+      },
+      "createUser",
+      { user },
+    );
   }
 
   async loginWithPipedrive(
     pipedriveAccId: number,
     logins: TokenResponse,
   ): Promise<Readonly<[CalIntError, null] | [null, boolean]>> {
-    try {
-      logDBOperation("loginWithPipedrive", { pipedriveAccId });
-      await db.update(users).set(logins).where(eq(users.id, pipedriveAccId));
-
-      return [null, true] as const;
-    } catch (error) {
-      return [
-        this.createError(ERROR_MESSAGES.LOGIN_FAILED, error, {
-          operation: "loginWithPipedrive",
-          pipedriveAccId,
-        }),
-        null,
-      ] as const;
-    }
+    return this.withErrorHandling(
+      async () => {
+        await db.update(users).set(logins).where(eq(users.id, pipedriveAccId));
+        return true;
+      },
+      "loginWithPipedrive",
+      { pipedriveAccId },
+    );
   }
 
   async addCalendlyAccountToUser(
@@ -585,117 +429,81 @@ export class DatabaseQueries {
     calendlyUser: CalendlyUser,
     { accessToken, refreshToken, expiresAt }: AccountLogin,
   ): PromiseReturn<User> {
-    try {
-      logDBOperation("addCalendlyAccountToUser", {
-        userId,
-        calendlyUri: calendlyUser.uri,
-      });
-      await db.insert(calendlyAccs).values({
-        userId,
-        uri: calendlyUser.uri,
-        name: calendlyUser.name,
-        organization: calendlyUser.current_organization,
-        accessToken,
-        refreshToken,
-        expiresAt,
-      });
-
-      const [err, user] = await this.getUser(userId);
-
-      if (err) {
-        return [
-          this.createError(ERROR_MESSAGES.USER_NOT_FOUND, err, {
-            userId,
-            calendlyUri: calendlyUser.uri,
-          }),
-          null,
-        ] as const;
-      }
-
-      return [null, user] as const;
-    } catch (error) {
-      return [
-        this.createError(ERROR_MESSAGES.DB_OPERATION_ERROR, error, {
-          operation: "addCalendlyAccountToUser",
+    return this.withErrorHandling(
+      async () => {
+        await db.insert(calendlyAccs).values({
           userId,
-          calendlyUser,
-        }),
-        null,
-      ] as const;
-    }
+          uri: calendlyUser.uri,
+          name: calendlyUser.name,
+          organization: calendlyUser.current_organization,
+          accessToken,
+          refreshToken,
+          expiresAt,
+        });
+
+        const [err, user] = await this.getUser(userId);
+
+        if (err) throw err;
+
+        return user;
+      },
+      "addCalendlyAccountToUser",
+      { userId, calendlyUser },
+    );
   }
 
   async loginWithCalendly(
     calendlyUri: string,
     creds: AccountLogin,
   ): PromiseReturn<boolean> {
-    try {
-      logDBOperation("loginWithCalendly", { calendlyUri });
-      const formattedCreds = {
-        ...creds,
-        expiresAt: new Date(creds.expiresAt),
-      };
+    return this.withErrorHandling(
+      async () => {
+        const formattedCreds = {
+          ...creds,
+          expiresAt: new Date(creds.expiresAt),
+        };
 
-      if (isNaN(formattedCreds.expiresAt.getTime())) {
-        throw new Error("Invalid expiration date");
-      }
+        if (isNaN(formattedCreds.expiresAt.getTime())) {
+          throw new Error("Invalid expiration date");
+        }
 
-      await db
-        .update(calendlyAccs)
-        .set(formattedCreds)
-        .where(eq(calendlyAccs.uri, calendlyUri));
+        await db
+          .update(calendlyAccs)
+          .set(formattedCreds)
+          .where(eq(calendlyAccs.uri, calendlyUri));
 
-      return [null, true] as const;
-    } catch (error) {
-      return [
-        this.createError(ERROR_MESSAGES.LOGIN_FAILED, error, {
-          operation: "loginWithCalendly",
-          calendlyUri,
-        }),
-        null,
-      ] as const;
-    }
+        return true;
+      },
+      "loginWithCalendly",
+      { calendlyUri },
+    );
   }
 
   async checkUserExists(
     userId: number,
   ): Promise<Readonly<[CalIntError, null] | [null, User[]]>> {
-    try {
-      logDBOperation("checkUserExists", { userId });
-      const user = await db.select().from(users).where(eq(users.id, userId));
-
-      return [null, user] as const;
-    } catch (error) {
-      return [
-        this.createError(ERROR_MESSAGES.DB_OPERATION_ERROR, error, {
-          operation: "checkUserExists",
-          userId,
-        }),
-        null,
-      ] as const;
-    }
+    return this.withErrorHandling(
+      async () => {
+        return await db.select().from(users).where(eq(users.id, userId));
+      },
+      "checkUserExists",
+      { userId },
+    );
   }
 
   async checkCalendlyUserExist(userId: number): PromiseReturn<any[]> {
-    try {
-      logDBOperation("checkCalendlyUserExist", { userId });
-      const res = await db
-        .select()
-        .from(users)
-        .innerJoin(calendlyAccs, eq(users.id, calendlyAccs.userId))
-        .where(eq(users.id, userId))
-        .limit(1);
-
-      return [null, res] as const;
-    } catch (error) {
-      return [
-        this.createError(ERROR_MESSAGES.DB_OPERATION_ERROR, error, {
-          operation: "checkCalendlyUserExist",
-          userId,
-        }),
-        null,
-      ] as const;
-    }
+    return this.withErrorHandling(
+      async () => {
+        return await db
+          .select()
+          .from(users)
+          .innerJoin(calendlyAccs, eq(users.id, calendlyAccs.userId))
+          .where(eq(users.id, userId))
+          .limit(1);
+      },
+      "checkCalendlyUserExist",
+      { userId },
+    );
   }
 }
 
