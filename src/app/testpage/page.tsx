@@ -3,8 +3,9 @@ import SetupFrame from "@/components/SetupFrame";
 import { SettingsDataRes } from "@/lib/calint-setup";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
-const TestPage = () => {
+const TestPageContent = () => {
   const searchParams = useSearchParams();
   const {
     isLoading,
@@ -35,4 +36,10 @@ const TestPage = () => {
   );
 };
 
-export default TestPage;
+export default function TestPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <TestPageContent />
+    </Suspense>
+  );
+}
