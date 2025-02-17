@@ -1,9 +1,10 @@
+import React from "react";
 import { ActivityType } from "pipedrive/v1";
 
 type PipeDriveActivityDropdownProps = {
   activities: ActivityType[];
   selectedActivity: ActivityType | null;
-  onActivitySelect: (activity: ActivityType) => void;
+  onActivitySelect: (activity: ActivityType | null) => void;
 };
 
 export const PipeDriveActivityDropdown: React.FC<
@@ -11,18 +12,17 @@ export const PipeDriveActivityDropdown: React.FC<
 > = ({ activities, selectedActivity, onActivitySelect }) => {
   return (
     <select
-      value={selectedActivity?.name || ""}
+      value={selectedActivity?.id?.toString() || ""}
       onChange={(e) => {
-        const selected = activities.find((a) => a.name === e.target.value);
-        if (selected) {
-          onActivitySelect(selected);
-        }
+        const selectedId = parseInt(e.target.value, 10);
+        const selected = activities.find((a) => a.id === selectedId);
+        onActivitySelect(selected || null);
       }}
       className="p-2 border rounded"
     >
       <option value="">Select activity</option>
-      {activities.map((activity, index) => (
-        <option key={index} value={activity.name}>
+      {activities.map((activity) => (
+        <option key={activity.id} value={activity.id?.toString()}>
           {activity.name}
         </option>
       ))}

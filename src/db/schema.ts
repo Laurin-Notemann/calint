@@ -168,3 +168,5 @@ export type NewPipedriveActivityType =
 
 export type TypeMappingType = typeof eventActivityTypesMapping.$inferSelect;
 export type NewTypeMappingType = typeof eventActivityTypesMapping.$inferInsert;
+
+export type TypeEnum = typeof typeMappings.enumValues;

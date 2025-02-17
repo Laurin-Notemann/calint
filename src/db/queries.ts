@@ -27,7 +27,7 @@ export type PromiseReturn<T> = Promise<
 >;
 
 export class DatabaseQueries {
-  constructor() { }
+  constructor() {}
 
   private createError = (
     message: string,
@@ -62,9 +62,9 @@ export class DatabaseQueries {
   }
 
   async getTypeMapping(
-    type: TypeMappingType['type'],
+    type: TypeMappingType["type"],
     companyId: string,
-    calendlyEventTypeId: string
+    calendlyEventTypeId: string,
   ): PromiseReturn<TypeMappingType | null> {
     return this.withErrorHandling(
       async () => {
@@ -75,19 +75,22 @@ export class DatabaseQueries {
             and(
               eq(eventActivityTypesMapping.type, type),
               eq(eventActivityTypesMapping.companyId, companyId),
-              eq(eventActivityTypesMapping.calendlyEventTypeId, calendlyEventTypeId)
-            )
+              eq(
+                eventActivityTypesMapping.calendlyEventTypeId,
+                calendlyEventTypeId,
+              ),
+            ),
           );
 
         return mapping.length > 0 ? mapping[0] : null;
       },
       "getTypeMapping",
-      { type, companyId, calendlyEventTypeId }
+      { type, companyId, calendlyEventTypeId },
     );
   }
 
   async updateTypeMapping(
-    typeMapping: NewTypeMappingType
+    typeMapping: NewTypeMappingType,
   ): PromiseReturn<TypeMappingType> {
     return this.withErrorHandling(
       async () => {
@@ -98,8 +101,11 @@ export class DatabaseQueries {
             and(
               eq(eventActivityTypesMapping.type, typeMapping.type),
               eq(eventActivityTypesMapping.companyId, typeMapping.companyId),
-              eq(eventActivityTypesMapping.calendlyEventTypeId, typeMapping.calendlyEventTypeId)
-            )
+              eq(
+                eventActivityTypesMapping.calendlyEventTypeId,
+                typeMapping.calendlyEventTypeId,
+              ),
+            ),
           )
           .returning();
 
@@ -110,12 +116,12 @@ export class DatabaseQueries {
         return updatedMapping[0];
       },
       "updateTypeMapping",
-      { typeMapping }
+      { typeMapping },
     );
   }
 
   async createTypeMapping(
-    typeMapping: NewTypeMappingType
+    typeMapping: NewTypeMappingType,
   ): PromiseReturn<TypeMappingType> {
     return this.withErrorHandling(
       async () => {
@@ -131,37 +137,39 @@ export class DatabaseQueries {
         return newMapping[0];
       },
       "createTypeMapping",
-      { typeMapping }
+      { typeMapping },
     );
   }
 
   async updateOrCreateTypeMapping(
-    typeMapping: NewTypeMappingType
+    typeMapping: NewTypeMappingType,
   ): PromiseReturn<TypeMappingType> {
     return this.withErrorHandling(
       async () => {
-        const [existingMappingError, existingMapping] = await this.getTypeMapping(
-          typeMapping.type,
-          typeMapping.companyId,
-          typeMapping.calendlyEventTypeId
-        );
+        const [existingMappingError, existingMapping] =
+          await this.getTypeMapping(
+            typeMapping.type,
+            typeMapping.companyId,
+            typeMapping.calendlyEventTypeId,
+          );
 
         if (existingMappingError) throw existingMappingError;
 
         if (existingMapping) {
-          const [updateError, updatedMapping] = await this.updateTypeMapping(typeMapping);
+          const [updateError, updatedMapping] =
+            await this.updateTypeMapping(typeMapping);
           if (updateError) throw updateError;
           return updatedMapping;
         }
-        const [createError, newMapping] = await this.createTypeMapping(typeMapping);
+        const [createError, newMapping] =
+          await this.createTypeMapping(typeMapping);
         if (createError) throw createError;
         return newMapping;
       },
       "updateOrCreateTypeMapping",
-      { typeMapping }
+      { typeMapping },
     );
   }
-
 
   async getAllTypeMappings(
     companyId: string,

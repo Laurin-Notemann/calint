@@ -91,6 +91,8 @@ export class CalintSetup {
       return [err, null] as const;
     }
 
+    this.logger.warn("Hallo");
+
     const [errMappings, dbMappings] = await this.querier.getAllTypeMappings(
       pipedriveUser.companyId,
     );

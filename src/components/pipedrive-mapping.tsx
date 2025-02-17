@@ -1,11 +1,13 @@
+import React from "react";
 import { ActivityType } from "pipedrive/v1";
 import { PipeDriveActivityDropdown } from "./pipedrive-activity-dropdown";
+import { TypeEnum } from "@/db/schema";
 
 type PipedriveMappingProps = {
-  name: string;
+  name: TypeEnum[number];
   pipedriveActivities: ActivityType[];
   selectedActivity: ActivityType | null;
-  onActivitySelect: (activity: ActivityType) => void;
+  onActivitySelect: (activity: ActivityType | null) => void;
 };
 
 export const PipedriveMapping: React.FC<PipedriveMappingProps> = ({
@@ -15,8 +17,8 @@ export const PipedriveMapping: React.FC<PipedriveMappingProps> = ({
   onActivitySelect,
 }) => {
   return (
-    <div className="flex">
-      <h3>{name}</h3>
+    <div className="flex items-center mb-4">
+      <h3 className="w-32">{name}</h3>
       <PipeDriveActivityDropdown
         activities={pipedriveActivities}
         selectedActivity={selectedActivity}
