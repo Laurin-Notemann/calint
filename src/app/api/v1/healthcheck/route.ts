@@ -10,5 +10,5 @@ export async function GET(request: NextRequest) {
 
   loggerr.error(test.searchParams.get("userId"))
 
-  return NextResponse.json("Ok" + test.searchParams.get("userId"));
+  return NextResponse.json("Ok" + test.searchParams.get("userId") + test);
 }
