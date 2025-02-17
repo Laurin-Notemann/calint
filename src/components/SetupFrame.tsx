@@ -13,24 +13,29 @@ const SetupFrame = ({
   const [selectedEventType, setSelectedEventType] =
     useState<CalEventType | null>(null);
   return (
-    <div className="p-4 text-2xl">
+    <div className="h-screen flex text-2xl p-4">
       {settingsData ? (
-        <div className="flex gap-2">
-          <CalendlyEventSidebar
-            eventTypes={settingsData.data.calendlyEventTypes}
-            onEventTypeSelect={setSelectedEventType}
-            selectedEventType={selectedEventType}
-          />
-          <PipedriveSetup
-            activities={settingsData.data.pipedriveAcitvityTypes}
-            eventType={selectedEventType}
-          />
-        </div>
+        <>
+          <div className="w-1/3">
+            <CalendlyEventSidebar
+              eventTypes={settingsData.data.calendlyEventTypes}
+              onEventTypeSelect={setSelectedEventType}
+              selectedEventType={selectedEventType}
+            />
+          </div>
+          <div className="w-2/3 p-4">
+            <PipedriveSetup
+              activities={settingsData.data.pipedriveAcitvityTypes}
+              eventType={selectedEventType}
+            />
+          </div>
+        </>
       ) : (
         <div>Error</div>
       )}
     </div>
   );
 };
+
 
 export default SetupFrame;

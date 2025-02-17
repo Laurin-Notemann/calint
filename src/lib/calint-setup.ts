@@ -62,24 +62,24 @@ export class CalintSetup {
       calAcc.refreshToken,
     );
 
-    const sharedEventTypesStartTime = Date.now();
-    const [eventTypesErrTwo] =
-      await this.calendlyController.findSharedEventTypes(
-        pipedriveUser.id,
-        pipedriveUser.companyId,
-      );
-    logElapsedTime(
-      this.logger,
-      sharedEventTypesStartTime,
-      "Finding shared event types",
-    );
-    if (eventTypesErrTwo) {
-      logError(this.logger, eventTypesErrTwo.error, {
-        context: "getAndSaveAllEventTypesAndActivityTypes",
-        userId,
-      });
-      return [getUserErr, null] as const;
-    }
+    //const sharedEventTypesStartTime = Date.now();
+    //const [eventTypesErrTwo] =
+    //  await this.calendlyController.findSharedEventTypes(
+    //    pipedriveUser.id,
+    //    pipedriveUser.companyId,
+    //  );
+    //logElapsedTime(
+    //  this.logger,
+    //  sharedEventTypesStartTime,
+    //  "Finding shared event types",
+    //);
+    //if (eventTypesErrTwo) {
+    //  logError(this.logger, eventTypesErrTwo.error, {
+    //    context: "getAndSaveAllEventTypesAndActivityTypes",
+    //    userId,
+    //  });
+    //  return [getUserErr, null] as const;
+    //}
 
     const [err, dbEventTypes] = await this.querier.getAllEventTypes(
       pipedriveUser.companyId,
