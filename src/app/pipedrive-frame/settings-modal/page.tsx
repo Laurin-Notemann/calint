@@ -31,7 +31,7 @@ function PipedriveFrameContent() {
     const initializePipedrive = async () => {
       try {
         const sdk = await new AppExtensionsSDK().initialize({
-          size: { height: 500, width: 500 },
+          size: { height: 1000, width: 1000 },
         });
         const settings = sdk.userSettings;
         console.log("Pipedrive context:", settings);
