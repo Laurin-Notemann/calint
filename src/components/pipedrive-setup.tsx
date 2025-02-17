@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from "react";
-import { CalEventType, TypeEnum, TypeMappingType } from "@/db/schema";
+import {
+  CalEventType,
+  PipedriveActivityType,
+  TypeEnum,
+  TypeMappingType,
+} from "@/db/schema";
 import { PipedriveMapping } from "./pipedrive-mapping";
-import { ActivityType } from "pipedrive/v1";
 
 type PipedriveSetupProps = {
-  activities: ActivityType[];
+  activities: PipedriveActivityType[];
   eventType: CalEventType | null;
   mappings: TypeMappingType[];
   onSaveMappings: (mappings: MappingSelections) => void;
 };
 
 export type MappingSelections = {
-  [K in TypeEnum[number]]?: ActivityType | null;
+  [K in TypeEnum[number]]?: PipedriveActivityType | null;
 };
 
 const mappingTitles: TypeEnum = [
@@ -41,9 +45,7 @@ export const PipedriveSetup: React.FC<PipedriveSetupProps> = ({
         const mapping = eventMappings.find((m) => m.type === title);
         if (mapping && mapping.pipedriveActivityTypeId) {
           const activity = activities.find(
-            (a) =>
-              a.id &&
-              a.id.toString() === mapping.pipedriveActivityTypeId?.toString(),
+            (a) => a.id && a.id === mapping.pipedriveActivityTypeId,
           );
           if (activity) {
             initialSelections[title] = activity;
@@ -57,7 +59,7 @@ export const PipedriveSetup: React.FC<PipedriveSetupProps> = ({
 
   const handleActivitySelect = (
     mappingName: TypeEnum[number],
-    activity: ActivityType | null,
+    activity: PipedriveActivityType | null,
   ) => {
     setSelectedActivities((prev) => ({
       ...prev,

@@ -7,6 +7,8 @@ import { Suspense } from "react";
 
 const TestPageContent = () => {
   const searchParams = useSearchParams();
+  const userId = searchParams.get("userId");
+
   const {
     isLoading,
     error,
@@ -22,6 +24,8 @@ const TestPageContent = () => {
       return res.json();
     },
   });
+  if (!userId) return <>UserId not found</>;
+
   if (error)
     return (
       <div>Could not get Calendly or Pipedrive information {error.message}</div>
@@ -31,7 +35,7 @@ const TestPageContent = () => {
     return <div>Currently fetching Calendly and Pipedrive data</div>;
   return (
     <div className="bg-background text-foreground h-screen">
-      <SetupFrame settingsData={settingsData} />
+      <SetupFrame settingsData={settingsData} userId={userId} />
     </div>
   );
 };

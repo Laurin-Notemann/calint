@@ -1,13 +1,12 @@
 import React from "react";
-import { ActivityType } from "pipedrive/v1";
 import { PipeDriveActivityDropdown } from "./pipedrive-activity-dropdown";
-import { TypeEnum } from "@/db/schema";
+import { PipedriveActivityType, TypeEnum } from "@/db/schema";
 
 type PipedriveMappingProps = {
   name: TypeEnum[number];
-  pipedriveActivities: ActivityType[];
-  selectedActivity: ActivityType | null;
-  onActivitySelect: (activity: ActivityType | null) => void;
+  pipedriveActivities: PipedriveActivityType[];
+  selectedActivity: PipedriveActivityType | null;
+  onActivitySelect: (activity: PipedriveActivityType | null) => void;
 };
 
 export const PipedriveMapping: React.FC<PipedriveMappingProps> = ({

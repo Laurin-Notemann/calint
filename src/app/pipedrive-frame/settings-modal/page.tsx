@@ -12,6 +12,7 @@ export const dynamic = "force-dynamic";
 
 function PipedriveFrameContent() {
   const searchParams = useSearchParams();
+  const userId = searchParams.get("userId");
   const {
     isLoading,
     error,
@@ -20,9 +21,7 @@ function PipedriveFrameContent() {
     queryKey: ["settingsData"],
     queryFn: async (): Promise<SettingsDataRes> => {
       const res = await fetch(
-        env.NEXT_PUBLIC_BASE_URL +
-          "/api/v1/settings-modal?userId=" +
-          searchParams.get("userId"),
+        env.NEXT_PUBLIC_BASE_URL + "/api/v1/settings-modal?userId=" + userId,
       );
 
       return res.json();
@@ -45,6 +44,8 @@ function PipedriveFrameContent() {
     initializePipedrive();
   }, [searchParams]);
 
+  if (!userId) return <>UserId not found</>;
+
   if (error)
     return (
       <div>Could not get Calendly or Pipedrive information {error.message}</div>
@@ -53,7 +54,7 @@ function PipedriveFrameContent() {
   if (isLoading)
     return <div>Currently fetching Calendly and Pipedrive data</div>;
 
-  return <SetupFrame settingsData={settingsData} />;
+  return <SetupFrame settingsData={settingsData} userId={userId} />;
 }
 
 export default function PipedriveFrame() {

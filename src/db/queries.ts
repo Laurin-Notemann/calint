@@ -11,6 +11,7 @@ import {
   NewCompany,
   NewPipedriveActivityType,
   NewTypeMappingType,
+  PipedriveActivityType,
   pipedriveActivityTypes,
   TypeMappingType,
   User,
@@ -195,6 +196,21 @@ export class DatabaseQueries {
           .where(eq(calEventTypes.companyId, companyId));
       },
       "getAllEventTypes",
+      { companyId },
+    );
+  }
+
+  async getAllActivityTypes(
+    companyId: string,
+  ): PromiseReturn<PipedriveActivityType[]> {
+    return this.withErrorHandling(
+      () => {
+        return db
+          .select()
+          .from(pipedriveActivityTypes)
+          .where(eq(pipedriveActivityTypes.companyId, companyId));
+      },
+      "getAllActivityTypes",
       { companyId },
     );
   }

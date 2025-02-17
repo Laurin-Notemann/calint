@@ -2,13 +2,16 @@ import { DatabaseQueries } from "@/db/queries";
 import { CalendlyController } from "./calendly/calendly-controller";
 import createLogger, { logError } from "@/utils/logger";
 import { PipedriveController } from "./pipedrive/pipedrive-controller";
-import { ActivityType } from "pipedrive/v1";
-import { CalEventType, TypeMappingType } from "@/db/schema";
+import {
+  CalEventType,
+  PipedriveActivityType,
+  TypeMappingType,
+} from "@/db/schema";
 
 export type SettingsDataRes = {
   data: {
     calendlyEventTypes: CalEventType[];
-    pipedriveAcitvityTypes: ActivityType[];
+    pipedriveAcitvityTypes: PipedriveActivityType[];
     typeMappings: TypeMappingType[];
   };
 };
@@ -101,13 +104,23 @@ export class CalintSetup {
         context: "getAllTypeMappings from DB",
         userId,
       });
-      return [err, null] as const;
+      return [errMappings, null] as const;
+    }
+
+    const [errActivityTypes, dbActivityTypes] =
+      await this.querier.getAllActivityTypes(pipedriveUser.companyId);
+    if (errActivityTypes) {
+      logError(this.logger, errActivityTypes.error, {
+        context: "getAllActivityTypes from DB",
+        userId,
+      });
+      return [errActivityTypes, null] as const;
     }
 
     const responseData: SettingsDataRes = {
       data: {
         calendlyEventTypes: dbEventTypes,
-        pipedriveAcitvityTypes: activityTypes,
+        pipedriveAcitvityTypes: dbActivityTypes,
         typeMappings: dbMappings,
       },
     };

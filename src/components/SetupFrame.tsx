@@ -5,25 +5,31 @@ import { useState } from "react";
 import { SettingsDataRes } from "@/lib/calint-setup";
 import { CalEventType } from "@/db/schema";
 import { env } from "@/lib/env";
+import { MappingsResponse } from "@/app/api/v1/mapping/create/route";
 
 const SetupFrame = ({
   settingsData,
+  userId,
 }: {
   settingsData: SettingsDataRes | undefined;
+  userId: string;
 }) => {
   const [selectedEventType, setSelectedEventType] =
     useState<CalEventType | null>(null);
 
   const handleSaveMappings = async (mappings: MappingSelections) => {
     try {
-      console.log(env.NEXT_PUBLIC_BASE_URL);
-      
-      await fetch(env.NEXT_PUBLIC_BASE_URL + "/api/v1/healthcheck");
-      // Implement your API call here to save the mappings
-      //await api.saveMappings(eventType.id, mappings);
-      // Show a success message or update the UI as needed
+      const res = await fetch(
+        env.NEXT_PUBLIC_BASE_URL + "/api/v1/mappings/create?userId=" + userId,
+        {
+          body: JSON.stringify(mappings),
+        },
+      );
+
+      const body: MappingsResponse = await res.json();
+
+      console.log(body);
     } catch (error) {
-      // Handle any errors
       console.error("Failed to save mappings:", error);
     }
   };
