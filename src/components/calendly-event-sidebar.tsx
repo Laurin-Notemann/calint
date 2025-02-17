@@ -17,10 +17,11 @@ export const CalendlyEventSidebar: React.FC<CalendlyEventSidebarProps> = ({
         {eventTypes.map((event, index) => (
           <button
             key={index}
-            className={`border-black border rounded p-2 ${selectedEventType?.name === event.name
+            className={`border-black border rounded p-2 ${
+              selectedEventType?.name === event.name
                 ? "bg-blue-500 text-white"
                 : ""
-              }`}
+            }`}
             onClick={() => onEventTypeSelect(event)}
           >
             {event.name}
@@ -30,4 +31,3 @@ export const CalendlyEventSidebar: React.FC<CalendlyEventSidebarProps> = ({
     </div>
   );
 };
-

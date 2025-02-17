@@ -1,0 +1,16 @@
+export const ERROR_MESSAGES = {
+  DB_OPERATION_ERROR: "Database error occurred during operation.",
+  USER_NOT_FOUND: "User not found.",
+  USER_CREATION_FAILED: "Failed to create user.",
+  COMPANY_NOT_FOUND: "Company not found.",
+  TOO_MANY_COMPANIES_FOUND: "Too many companies found.",
+  COMPANY_CREATION_ERROR: "Error occurred while creating company.",
+  ALL_EVENT_TYPES_EXIST: "All event types already exist.",
+  EVENT_TYPES_ADDED_SUCCESS: "Successfully added new event types.",
+  ALL_ACTIVITY_TYPES_EXIST: "All activity types already exist.",
+  ACTIVITY_TYPES_ADDED_SUCCESS: "Successfully added new activity types.",
+  ACCOUNT_NOT_FOUND: "Account not found.",
+  ACCOUNT_CREATION_FAILED: "Failed to create account.",
+  LOGIN_FAILED: "Login failed.",
+  MISSING_REQUIRED_FIELDS: "Missing required fields.",
+};

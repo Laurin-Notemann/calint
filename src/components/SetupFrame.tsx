@@ -37,5 +37,4 @@ const SetupFrame = ({
   );
 };
 
-
 export default SetupFrame;

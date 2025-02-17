@@ -47,14 +47,6 @@ export const users = pgTable("users", {
     }),
 });
 
-export const companyRelations = relations(companies, ({ many }) => ({
-  users: many(users),
-}));
-
-export const userRelations = relations(users, ({ many }) => ({
-  calendlyAccs: many(calendlyAccs),
-}));
-
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 
@@ -126,7 +118,34 @@ export const eventActivityTypesMapping = pgTable(
         onDelete: "cascade",
       },
     ),
+    companyId: uuid("company_id")
+      .notNull()
+      .references(() => companies.id, {
+        onDelete: "cascade",
+      }),
   },
+);
+
+export const companyRelations = relations(companies, ({ many }) => ({
+  users: many(users),
+  calEventTypes: many(calEventTypes),
+  pipedriveActivityTypes: many(pipedriveActivityTypes),
+  eventActivityTypesMapping: many(eventActivityTypesMapping),
+}));
+
+export const userRelations = relations(users, ({ many }) => ({
+  calendlyAccs: many(calendlyAccs),
+}));
+
+export const eventTypeRelations = relations(calEventTypes, ({ many }) => ({
+  typeMappings: many(eventActivityTypesMapping),
+}));
+
+export const activityTypeRelations = relations(
+  pipedriveActivityTypes,
+  ({ many }) => ({
+    typeMappings: many(eventActivityTypesMapping),
+  }),
 );
 
 export type Company = typeof companies.$inferSelect;
@@ -146,3 +165,6 @@ export type NewCalEventType = typeof calEventTypes.$inferInsert;
 export type PipedriveActivityType = typeof pipedriveActivityTypes.$inferSelect;
 export type NewPipedriveActivityType =
   typeof pipedriveActivityTypes.$inferInsert;
+
+export type TypeMappingType = typeof eventActivityTypesMapping.$inferSelect;
+export type NewTypeMappingType = typeof eventActivityTypesMapping.$inferInsert;

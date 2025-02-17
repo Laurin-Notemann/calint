@@ -6,10 +6,12 @@ import {
   calEventTypes,
   companies,
   Company,
+  eventActivityTypesMapping,
   NewCalEventType,
   NewCompany,
   NewPipedriveActivityType,
   pipedriveActivityTypes,
+  TypeMappingType,
   User,
   UserCalendly,
   users,
@@ -17,39 +19,85 @@ import {
 import { logDBError, logDBOperation } from "@/utils/db-logger";
 import { GetCurrentUserResponseAllOfData, TokenResponse } from "pipedrive/v1";
 
+import { ERROR_MESSAGES } from "@/lib/constants";
+
 export type PromiseReturn<T> = Promise<
   Readonly<[CalIntError, null] | [null, T]>
 >;
 
 export class DatabaseQueries {
-  constructor() { }
+  constructor() {}
 
-  async getAllEventTypes(companyId: string): PromiseReturn<CalEventType[]> {
+  private createError = (
+    message: string,
+    error: any,
+    context?: any,
+  ): CalIntError => {
+    logDBError(message, error, context);
+    return {
+      message,
+      error,
+    };
+  };
+  private async withErrorHandling<T>(
+    operation: DatabaseOperation<T>,
+    operationName: string,
+    ...args: any[]
+  ): PromiseReturn<T> {
     try {
-      logDBOperation("getAllEventTypes", { companyId });
-
-      const res = await db
-        .select()
-        .from(calEventTypes)
-        .where(eq(calEventTypes.companyId, companyId));
-
-      return [null, res];
+      logDBOperation(operationName, ...args);
+      const result = await operation(...args);
+      return [null, result] as const;
     } catch (error) {
-      logDBError("getAllEventTypes", error, { companyId });
       return [
-        {
-          message: "Database error trying get all event types",
-          error: error as any,
-        },
+        this.createError(ERROR_MESSAGES.DB_OPERATION_ERROR, error, {
+          operation: operationName,
+          ...args,
+        }),
         null,
       ] as const;
     }
   }
 
-  async addAllEventTypes(eventTypes: NewCalEventType[]) {
+  async getAllTypeMappings(
+    companyId: string,
+  ): PromiseReturn<TypeMappingType[]> {
+    return this.withErrorHandling(
+      async () => {
+        return await db
+          .select()
+          .from(eventActivityTypesMapping)
+          .where(eq(eventActivityTypesMapping.companyId, companyId));
+      },
+      "getAllTypeMappings",
+      { companyId },
+    );
+  }
+
+  async getAllEventTypes(companyId: string): PromiseReturn<CalEventType[]> {
+    try {
+      logDBOperation("getAllEventTypes", { companyId });
+      const res = await db
+        .select()
+        .from(calEventTypes)
+        .where(eq(calEventTypes.companyId, companyId));
+      return [null, res] as const;
+    } catch (error) {
+      return [
+        this.createError(ERROR_MESSAGES.DB_OPERATION_ERROR, error, {
+          operation: "getAllEventTypes",
+          companyId,
+        }),
+        null,
+      ] as const;
+    }
+  }
+
+  async addAllEventTypes(
+    eventTypes: NewCalEventType[],
+  ): PromiseReturn<{ message: string; added: number; skipped?: number }> {
     try {
       logDBOperation("addAllEventTypes", { eventTypes });
-
       const [checkError, result] =
         await this.checkExistingEventTypes(eventTypes);
 
@@ -61,7 +109,7 @@ export class DatabaseQueries {
         return [
           null,
           {
-            message: "All event types already exist",
+            message: ERROR_MESSAGES.ALL_EVENT_TYPES_EXIST,
             added: 0,
           },
         ] as const;
@@ -72,27 +120,29 @@ export class DatabaseQueries {
       return [
         null,
         {
-          message: "Successfully added new event types",
+          message: ERROR_MESSAGES.EVENT_TYPES_ADDED_SUCCESS,
           added: result.new.length,
           skipped: result.existing.length,
         },
       ] as const;
     } catch (error) {
-      logDBError("addAllEventTypes", error, { eventTypes });
       return [
-        {
-          message: "Database error trying insert all eventTypes",
-          error: error as any,
-        },
+        this.createError(ERROR_MESSAGES.DB_OPERATION_ERROR, error, {
+          operation: "addAllEventTypes",
+          eventTypes,
+        }),
         null,
       ] as const;
     }
   }
 
-  async checkExistingEventTypes(eventTypes: NewCalEventType[]) {
+  async checkExistingEventTypes(eventTypes: NewCalEventType[]): PromiseReturn<{
+    existing: CalEventType[];
+    new: NewCalEventType[];
+    hasConflicts: boolean;
+  }> {
     try {
       logDBOperation("checkExistingEventTypes", { eventTypes });
-
       const existingTypes = await db
         .select()
         .from(calEventTypes)
@@ -117,21 +167,21 @@ export class DatabaseQueries {
         },
       ] as const;
     } catch (error) {
-      logDBError("checkExistingEventTypes", error, { eventTypes });
       return [
-        {
-          message: "Database error checking existing eventTypes",
-          error,
-        },
+        this.createError(ERROR_MESSAGES.DB_OPERATION_ERROR, error, {
+          operation: "checkExistingEventTypes",
+          eventTypes,
+        }),
         null,
       ] as const;
     }
   }
 
-  async addAllActivityTypes(activityTypes: NewPipedriveActivityType[]) {
+  async addAllActivityTypes(
+    activityTypes: NewPipedriveActivityType[],
+  ): PromiseReturn<{ message: string; added: number; skipped?: number }> {
     try {
       logDBOperation("addAllActivityTypes", { activityTypes });
-
       const [checkError, result] =
         await this.checkExistingActivityTypes(activityTypes);
 
@@ -143,7 +193,7 @@ export class DatabaseQueries {
         return [
           null,
           {
-            message: "All activity types already exist",
+            message: ERROR_MESSAGES.ALL_ACTIVITY_TYPES_EXIST,
             added: 0,
           },
         ] as const;
@@ -154,27 +204,31 @@ export class DatabaseQueries {
       return [
         null,
         {
-          message: "Successfully added new activity types",
+          message: ERROR_MESSAGES.ACTIVITY_TYPES_ADDED_SUCCESS,
           added: result.new.length,
           skipped: result.existing.length,
         },
       ] as const;
     } catch (error) {
-      logDBError("addAllActivityTypes", error, { activityTypes });
       return [
-        {
-          message: "Database error trying insert all activityTypes",
-          error: error as any,
-        },
+        this.createError(ERROR_MESSAGES.DB_OPERATION_ERROR, error, {
+          operation: "addAllActivityTypes",
+          activityTypes,
+        }),
         null,
       ] as const;
     }
   }
 
-  async checkExistingActivityTypes(activityTypes: NewPipedriveActivityType[]) {
+  async checkExistingActivityTypes(
+    activityTypes: NewPipedriveActivityType[],
+  ): PromiseReturn<{
+    existing: any[];
+    new: NewPipedriveActivityType[];
+    hasConflicts: boolean;
+  }> {
     try {
       logDBOperation("checkExistingActivityTypes", { activityTypes });
-
       const existingTypes = await db
         .select()
         .from(pipedriveActivityTypes)
@@ -186,11 +240,11 @@ export class DatabaseQueries {
         );
 
       const existingIdPairs = new Set(
-        existingTypes.map((at) => `${at.pipedriveId}-${at.companyId}`)
+        existingTypes.map((at) => `${at.pipedriveId}-${at.companyId}`),
       );
 
       const newActivityTypes = activityTypes.filter(
-        (at) => !existingIdPairs.has(`${at.pipedriveId}-${at.companyId}`)
+        (at) => !existingIdPairs.has(`${at.pipedriveId}-${at.companyId}`),
       );
 
       return [
@@ -202,12 +256,11 @@ export class DatabaseQueries {
         },
       ] as const;
     } catch (error) {
-      logDBError("checkExistingActivityTypes", error, { activityTypes });
       return [
-        {
-          message: "Database error checking existing activityTypes",
-          error,
-        },
+        this.createError(ERROR_MESSAGES.DB_OPERATION_ERROR, error, {
+          operation: "checkExistingActivityTypes",
+          activityTypes,
+        }),
         null,
       ] as const;
     }
@@ -219,25 +272,23 @@ export class DatabaseQueries {
       const user = await db.select().from(users).where(eq(users.id, userId));
 
       if (user.length !== 1) {
-        const error = new Error("No user found");
-        logDBError("getUser", error, { userId });
         return [
-          {
-            message: "No user found",
-            error,
-          },
+          this.createError(
+            ERROR_MESSAGES.USER_NOT_FOUND,
+            new Error("No user found"),
+            { userId },
+          ),
           null,
         ] as const;
       }
 
       return [null, user[0]] as const;
     } catch (error) {
-      logDBError("getUser", error, { userId });
       return [
-        {
-          message: "Database error trying to find user",
-          error,
-        },
+        this.createError(ERROR_MESSAGES.DB_OPERATION_ERROR, error, {
+          operation: "getUser",
+          userId,
+        }),
         null,
       ] as const;
     }
@@ -253,25 +304,23 @@ export class DatabaseQueries {
         .where(eq(users.id, userId));
 
       if (res.length != 1) {
-        const error = new Error("No user or calendly acc found");
-        logDBError("getUserAndCalendlyAcc", error, { userId });
         return [
-          {
-            message: "No user or calendly acc found",
-            error,
-          },
+          this.createError(
+            ERROR_MESSAGES.USER_NOT_FOUND,
+            new Error("No user or calendly acc found"),
+            { userId },
+          ),
           null,
         ] as const;
       }
 
-      return [null, res[0]];
+      return [null, res[0]] as const;
     } catch (error) {
-      logDBError("getUserAndCalendlyAcc", error, { userId });
       return [
-        {
-          message: "Database error trying to find user and calendly acc",
-          error,
-        },
+        this.createError(ERROR_MESSAGES.DB_OPERATION_ERROR, error, {
+          operation: "getUserAndCalendlyAcc",
+          userId,
+        }),
         null,
       ] as const;
     }
@@ -279,42 +328,39 @@ export class DatabaseQueries {
 
   async getCompanyById(companyId: string): PromiseReturn<Company> {
     try {
-      logDBOperation("getCompanyById", { companyDomain: companyId });
+      logDBOperation("getCompanyById", { companyId });
       const company = await db
         .select()
         .from(companies)
         .where(eq(companies.id, companyId));
 
       if (company.length < 1) {
-        const error = new Error("Company not found");
-        logDBError("getCompanyById", error, { companyId });
         return [
-          {
-            message: "Company not found",
-            error,
-          },
+          this.createError(
+            ERROR_MESSAGES.COMPANY_NOT_FOUND,
+            new Error("Company not found"),
+            { companyId },
+          ),
           null,
         ] as const;
       } else if (company.length > 1) {
-        const error = new Error("Too many companies found");
-        logDBError("getCompanyById", error, { companyId });
         return [
-          {
-            message: "Too many companies found",
-            error,
-          },
+          this.createError(
+            ERROR_MESSAGES.TOO_MANY_COMPANIES_FOUND,
+            new Error("Too many companies found"),
+            { companyId },
+          ),
           null,
         ] as const;
       }
 
       return [null, company[0]] as const;
     } catch (error) {
-      logDBError("getCompanyById", error, { companyId });
       return [
-        {
-          message: "Database error when trying to find company",
-          error,
-        },
+        this.createError(ERROR_MESSAGES.DB_OPERATION_ERROR, error, {
+          operation: "getCompanyById",
+          companyId,
+        }),
         null,
       ] as const;
     }
@@ -329,35 +375,32 @@ export class DatabaseQueries {
         .where(eq(companies.domain, companyDomain));
 
       if (company.length < 1) {
-        const error = new Error("Company not found");
-        logDBError("getCompany", error, { companyDomain });
         return [
-          {
-            message: "Company not found",
-            error,
-          },
+          this.createError(
+            ERROR_MESSAGES.COMPANY_NOT_FOUND,
+            new Error("Company not found"),
+            { companyDomain },
+          ),
           null,
         ] as const;
       } else if (company.length > 1) {
-        const error = new Error("Too many companies found");
-        logDBError("getCompany", error, { companyDomain });
         return [
-          {
-            message: "Too many companies found",
-            error,
-          },
+          this.createError(
+            ERROR_MESSAGES.TOO_MANY_COMPANIES_FOUND,
+            new Error("Too many companies found"),
+            { companyDomain },
+          ),
           null,
         ] as const;
       }
 
       return [null, company[0]] as const;
     } catch (error) {
-      logDBError("getCompany", error, { companyDomain });
       return [
-        {
-          message: "Database error when trying to find company",
-          error,
-        },
+        this.createError(ERROR_MESSAGES.DB_OPERATION_ERROR, error, {
+          operation: "getCompany",
+          companyDomain,
+        }),
         null,
       ] as const;
     }
@@ -371,26 +414,24 @@ export class DatabaseQueries {
         .values(companyValues)
         .returning();
 
-      if (company.length < 1 || company.length > 1) {
-        const error = new Error("Error when creating company");
-        logDBError("createCompany", error, { companyValues });
+      if (company.length !== 1) {
         return [
-          {
-            message: "Error when creating company",
-            error,
-          },
+          this.createError(
+            ERROR_MESSAGES.COMPANY_CREATION_ERROR,
+            new Error("Error when creating company"),
+            { companyValues },
+          ),
           null,
         ] as const;
       }
 
       return [null, company[0]] as const;
     } catch (error) {
-      logDBError("createCompany", error, { companyValues });
       return [
-        {
-          message: "Database error when trying to create company",
-          error,
-        },
+        this.createError(ERROR_MESSAGES.DB_OPERATION_ERROR, error, {
+          operation: "createCompany",
+          companyValues,
+        }),
         null,
       ] as const;
     }
@@ -405,24 +446,13 @@ export class DatabaseQueries {
 
       if (company) return [null, company] as const;
 
-      const [createError, createdCompany] =
-        await this.createCompany(companyValues);
-
-      if (createError) {
-        logDBError("createCompanyOrReturnCompany", createError, {
-          companyValues,
-        });
-        return [createError, null];
-      }
-
-      return [null, createdCompany] as const;
+      return await this.createCompany(companyValues);
     } catch (error) {
-      logDBError("createCompanyOrReturnCompany", error, { companyValues });
       return [
-        {
-          message: "Database error when trying to create company",
-          error,
-        },
+        this.createError(ERROR_MESSAGES.DB_OPERATION_ERROR, error, {
+          operation: "createCompanyOrReturnCompany",
+          companyValues,
+        }),
         null,
       ] as const;
     }
@@ -437,20 +467,22 @@ export class DatabaseQueries {
         .where(eq(companies.id, company.id));
 
       if (err) {
-        logDBError("updateCompany", err, {
-          company,
-        });
-        return [err, null];
+        return [
+          this.createError(ERROR_MESSAGES.DB_OPERATION_ERROR, err, {
+            operation: "updateCompany",
+            company,
+          }),
+          null,
+        ] as const;
       }
 
       return [null, updatedCompany] as const;
     } catch (error) {
-      logDBError("updateCompany", error, { company });
       return [
-        {
-          message: "Database error when trying to update company",
-          error,
-        },
+        this.createError(ERROR_MESSAGES.DB_OPERATION_ERROR, error, {
+          operation: "updateCompany",
+          company,
+        }),
         null,
       ] as const;
     }
@@ -472,10 +504,11 @@ export class DatabaseQueries {
 
       if (!user.id || !user.name) {
         return [
-          {
-            message: "Missing required user fields",
-            error: new Error("id and name are required"),
-          },
+          this.createError(
+            ERROR_MESSAGES.MISSING_REQUIRED_FIELDS,
+            new Error("id and name are required"),
+            { user },
+          ),
           null,
         ] as const;
       }
@@ -486,8 +519,7 @@ export class DatabaseQueries {
       });
 
       if (error) {
-        logDBError("createUser", error, { userId: user.id });
-        return [error, null];
+        return [error, null] as const;
       }
 
       const createdUserList = await db
@@ -506,25 +538,23 @@ export class DatabaseQueries {
         .returning();
 
       if (createdUserList.length < 1) {
-        const error = new Error("No user");
-        logDBError("createUser", error, { userId: user.id });
         return [
-          {
-            message: "could not create user",
-            error,
-          },
+          this.createError(
+            ERROR_MESSAGES.USER_CREATION_FAILED,
+            new Error("No user created"),
+            { user },
+          ),
           null,
         ] as const;
       }
 
       return [null, true] as const;
     } catch (error) {
-      logDBError("createUser", error, { userId: user.id });
       return [
-        {
-          message: "Account could not be created: ",
-          error,
-        },
+        this.createError(ERROR_MESSAGES.DB_OPERATION_ERROR, error, {
+          operation: "createUser",
+          user,
+        }),
         null,
       ] as const;
     }
@@ -540,12 +570,11 @@ export class DatabaseQueries {
 
       return [null, true] as const;
     } catch (error) {
-      logDBError("loginWithPipedrive", error, { pipedriveAccId });
       return [
-        {
-          message: "Account not found",
-          error,
-        },
+        this.createError(ERROR_MESSAGES.LOGIN_FAILED, error, {
+          operation: "loginWithPipedrive",
+          pipedriveAccId,
+        }),
         null,
       ] as const;
     }
@@ -555,7 +584,7 @@ export class DatabaseQueries {
     userId: number,
     calendlyUser: CalendlyUser,
     { accessToken, refreshToken, expiresAt }: AccountLogin,
-  ) {
+  ): PromiseReturn<User> {
     try {
       logDBOperation("addCalendlyAccountToUser", {
         userId,
@@ -574,30 +603,23 @@ export class DatabaseQueries {
       const [err, user] = await this.getUser(userId);
 
       if (err) {
-        logDBError("addCalendlyAccountToUser", err, {
-          userId,
-          calendlyUri: calendlyUser.uri,
-        });
         return [
-          {
-            message: "User was not found",
-            error: err,
-          },
+          this.createError(ERROR_MESSAGES.USER_NOT_FOUND, err, {
+            userId,
+            calendlyUri: calendlyUser.uri,
+          }),
           null,
         ] as const;
       }
 
       return [null, user] as const;
     } catch (error) {
-      logDBError("addCalendlyAccountToUser", error, {
-        userId,
-        calendlyUri: calendlyUser.uri,
-      });
       return [
-        {
-          message: "Account could not be created",
-          error: error,
-        },
+        this.createError(ERROR_MESSAGES.DB_OPERATION_ERROR, error, {
+          operation: "addCalendlyAccountToUser",
+          userId,
+          calendlyUser,
+        }),
         null,
       ] as const;
     }
@@ -615,9 +637,7 @@ export class DatabaseQueries {
       };
 
       if (isNaN(formattedCreds.expiresAt.getTime())) {
-        const error = new Error("Invalid expiration date");
-        logDBError("loginWithCalendly", error, { calendlyUri });
-        throw error;
+        throw new Error("Invalid expiration date");
       }
 
       await db
@@ -627,12 +647,11 @@ export class DatabaseQueries {
 
       return [null, true] as const;
     } catch (error) {
-      logDBError("loginWithCalendly", error, { calendlyUri });
       return [
-        {
-          message: "Could not login into Calendly",
-          error,
-        },
+        this.createError(ERROR_MESSAGES.LOGIN_FAILED, error, {
+          operation: "loginWithCalendly",
+          calendlyUri,
+        }),
         null,
       ] as const;
     }
@@ -647,18 +666,17 @@ export class DatabaseQueries {
 
       return [null, user] as const;
     } catch (error) {
-      logDBError("checkUserExists", error, { userId });
       return [
-        {
-          message: "DB: User could not be found",
-          error,
-        },
+        this.createError(ERROR_MESSAGES.DB_OPERATION_ERROR, error, {
+          operation: "checkUserExists",
+          userId,
+        }),
         null,
       ] as const;
     }
   }
 
-  async checkCalendlyUserExist(userId: number) {
+  async checkCalendlyUserExist(userId: number): PromiseReturn<any[]> {
     try {
       logDBOperation("checkCalendlyUserExist", { userId });
       const res = await db
@@ -670,12 +688,11 @@ export class DatabaseQueries {
 
       return [null, res] as const;
     } catch (error) {
-      logDBError("checkCalendlyUserExist", error, { userId });
       return [
-        {
-          message: "Account could not be found",
-          error,
-        },
+        this.createError(ERROR_MESSAGES.DB_OPERATION_ERROR, error, {
+          operation: "checkCalendlyUserExist",
+          userId,
+        }),
         null,
       ] as const;
     }
@@ -724,3 +741,5 @@ export type CalendlyUser = {
 };
 
 export const querier = new DatabaseQueries();
+
+type DatabaseOperation<T> = (...args: any[]) => Promise<T>;
