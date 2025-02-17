@@ -250,7 +250,7 @@ export class CalendlyClient {
       {
         method: "POST",
         body: {
-          url: "https://calint.laurinnotemann.dev/api/v1/calendly/webhook",
+          url: env.BASE_URL + "/api/v1/calendly/webhook",
           events: [
             "invitee.created",
             "invitee.canceled",

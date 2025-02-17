@@ -10,12 +10,16 @@ export const env = createEnv({
     CALENDLY_CLIENT_ID: z.string(),
     CALENDLY_CLIENT_SECRET: z.string(),
     CALENDLY_REDIRECT_URL: z.string().url(),
+    BASE_URL: z.string(),
   },
   client: {
     NEXT_PUBLIC_CALENDLY_CLIENT_ID: z.string(),
     NEXT_PUBLIC_CALENDLY_REDIRECT_URL: z.string().url(),
+    NEXT_PUBLIC_BASE_URL: z.string(),
   },
   runtimeEnv: {
+    BASE_URL: process.env.BASE_URL,
+    NEXT_PUBLIC_BASE_URL: process.env.BASE_URL,
     DATABASE_URL: process.env.DATABASE_URL,
     PIPEDRIVE_CLIENT_ID: process.env.PIPEDRIVE_CLIENT_ID,
     PIPEDRIVE_CLIENT_SECRET: process.env.PIPEDRIVE_CLIENT_SECRET,

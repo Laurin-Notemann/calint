@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import SetupFrame from "@/components/SetupFrame";
 import { SettingsDataRes } from "@/lib/calint-setup";
+import { env } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,8 @@ function PipedriveFrameContent() {
     queryKey: ["settingsData"],
     queryFn: async (): Promise<SettingsDataRes> => {
       const res = await fetch(
-        "https://calint.laurinnotemann.dev/api/v1/settings-modal?userId=" +
+        env.BASE_URL +
+          "/api/v1/settings-modal?userId=" +
           searchParams.get("userId"),
       );
 
