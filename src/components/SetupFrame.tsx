@@ -5,7 +5,7 @@ import { useState } from "react";
 import { SettingsDataRes } from "@/lib/calint-setup";
 import { CalEventType } from "@/db/schema";
 import { env } from "@/lib/env";
-import { MappingsResponse } from "@/app/api/v1/mapping/create/route";
+import { MappingsRequestBody } from "@/app/api/v1/mapping/create/route";
 
 const SetupFrame = ({
   settingsData,
@@ -19,16 +19,20 @@ const SetupFrame = ({
 
   const handleSaveMappings = async (mappings: MappingSelections) => {
     try {
+      if (!selectedEventType) {
+        throw new Error("EventType not selected");
+      }
+      const body: MappingsRequestBody = {
+        mappings,
+        eventTypeId: selectedEventType.id,
+      };
       const res = await fetch(
-        env.NEXT_PUBLIC_BASE_URL + "/api/v1/mappings/create?userId=" + userId,
+        env.NEXT_PUBLIC_BASE_URL + "/api/v1/mapping/create?userId=" + userId,
         {
-          body: JSON.stringify(mappings),
+          method: "POST",
+          body: JSON.stringify(body),
         },
       );
-
-      const body: MappingsResponse = await res.json();
-
-      console.log(body);
     } catch (error) {
       console.error("Failed to save mappings:", error);
     }

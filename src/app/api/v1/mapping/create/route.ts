@@ -13,7 +13,7 @@ export type MappingsResponse = {
 
 const logger = createLogger("create-mapping");
 
-export type MappingsRequessBody = {
+export type MappingsRequestBody = {
   mappings: MappingSelections;
   eventTypeId: string;
 };
@@ -31,14 +31,17 @@ export async function POST(request: NextRequest) {
   const [getUserErr, user] = await querier.getUserAndCalendlyAcc(userId);
   if (getUserErr) {
     logError(logger, getUserErr, {
-      context: "getAndSaveAllEventTypesAndActivityTypes",
+      context: "getUserAndCalendlyAcc",
       userId,
     });
-    return NextResponse.json({
-      success: false,
-      error: "" + getUserErr.error,
-      data: [],
-    });
+    return NextResponse.json(
+      {
+        success: false,
+        error: "" + getUserErr.error,
+        data: [],
+      },
+      { status: 500 },
+    );
   }
 
   const pipedriveUser = user.users;
@@ -46,37 +49,53 @@ export async function POST(request: NextRequest) {
   await pipedriveController.triggerTokenUpdate(pipedriveUser.id);
 
   try {
-    const body: MappingsRequessBody = await request.json();
+    const body: MappingsRequestBody = await request.json();
+    logger.warn(body);
     const newTypeMappings = remapMappingsToNewTypeMappingType(
       body,
       pipedriveUser.companyId,
     );
+    logger.warn(2);
 
     for (const mapping of newTypeMappings) {
       const [upsertErr] = await querier.updateOrCreateTypeMapping(mapping);
       if (upsertErr) {
-        return NextResponse.json({
-          success: false,
-          error: "" + upsertErr,
-          data: [],
-        });
+        return NextResponse.json(
+          {
+            success: false,
+            error: "upserMapping: " + upsertErr,
+            data: [],
+          },
+          { status: 500 },
+        );
       }
     }
+    logger.warn(3);
 
     const [err, allMappings] = await querier.getAllTypeMappings(
       pipedriveUser.companyId,
     );
     if (err)
-      return NextResponse.json({ success: false, error: "" + err, data: [] });
+      return NextResponse.json(
+        { success: false, error: "getAllTypeMappings: " + err, data: [] },
+        { status: 500 },
+      );
+    logger.warn(4);
 
-    return NextResponse.json({ success: true, error: null, data: allMappings });
+    return NextResponse.json(
+      { success: true, error: null, data: JSON.stringify(allMappings) },
+      { status: 201 },
+    );
   } catch (error) {
-    return NextResponse.json({ success: false, error: "" + error, data: [] });
+    return NextResponse.json(
+      { success: false, error: "CatchBlock: " + error, data: [] },
+      { status: 400 },
+    );
   }
 }
 
 function remapMappingsToNewTypeMappingType(
-  body: MappingsRequessBody,
+  body: MappingsRequestBody,
   companyId: string,
 ): NewTypeMappingType[] {
   const { mappings, eventTypeId } = body;
