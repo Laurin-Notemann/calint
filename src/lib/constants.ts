@@ -13,4 +13,6 @@ export const ERROR_MESSAGES = {
   ACCOUNT_CREATION_FAILED: "Failed to create account.",
   LOGIN_FAILED: "Login failed.",
   MISSING_REQUIRED_FIELDS: "Missing required fields.",
+  TYPE_MAPPING_CREATION_FAILED: "Failed to create type mapping.",
+  TYPE_MAPPING_UPDATE_FAILED: "Failed to update type mapping.",
 };

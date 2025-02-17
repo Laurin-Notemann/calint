@@ -1,4 +1,4 @@
-import { eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import db from "./db";
 import {
   calendlyAccs,
@@ -10,6 +10,7 @@ import {
   NewCalEventType,
   NewCompany,
   NewPipedriveActivityType,
+  NewTypeMappingType,
   pipedriveActivityTypes,
   TypeMappingType,
   User,
@@ -26,7 +27,7 @@ export type PromiseReturn<T> = Promise<
 >;
 
 export class DatabaseQueries {
-  constructor() {}
+  constructor() { }
 
   private createError = (
     message: string,
@@ -39,6 +40,7 @@ export class DatabaseQueries {
       error,
     };
   };
+
   private async withErrorHandling<T>(
     operation: DatabaseOperation<T>,
     operationName: string,
@@ -58,6 +60,108 @@ export class DatabaseQueries {
       ] as const;
     }
   }
+
+  async getTypeMapping(
+    type: TypeMappingType['type'],
+    companyId: string,
+    calendlyEventTypeId: string
+  ): PromiseReturn<TypeMappingType | null> {
+    return this.withErrorHandling(
+      async () => {
+        const mapping = await db
+          .select()
+          .from(eventActivityTypesMapping)
+          .where(
+            and(
+              eq(eventActivityTypesMapping.type, type),
+              eq(eventActivityTypesMapping.companyId, companyId),
+              eq(eventActivityTypesMapping.calendlyEventTypeId, calendlyEventTypeId)
+            )
+          );
+
+        return mapping.length > 0 ? mapping[0] : null;
+      },
+      "getTypeMapping",
+      { type, companyId, calendlyEventTypeId }
+    );
+  }
+
+  async updateTypeMapping(
+    typeMapping: NewTypeMappingType
+  ): PromiseReturn<TypeMappingType> {
+    return this.withErrorHandling(
+      async () => {
+        const updatedMapping = await db
+          .update(eventActivityTypesMapping)
+          .set(typeMapping)
+          .where(
+            and(
+              eq(eventActivityTypesMapping.type, typeMapping.type),
+              eq(eventActivityTypesMapping.companyId, typeMapping.companyId),
+              eq(eventActivityTypesMapping.calendlyEventTypeId, typeMapping.calendlyEventTypeId)
+            )
+          )
+          .returning();
+
+        if (updatedMapping.length === 0) {
+          throw new Error(ERROR_MESSAGES.TYPE_MAPPING_UPDATE_FAILED);
+        }
+
+        return updatedMapping[0];
+      },
+      "updateTypeMapping",
+      { typeMapping }
+    );
+  }
+
+  async createTypeMapping(
+    typeMapping: NewTypeMappingType
+  ): PromiseReturn<TypeMappingType> {
+    return this.withErrorHandling(
+      async () => {
+        const newMapping = await db
+          .insert(eventActivityTypesMapping)
+          .values(typeMapping)
+          .returning();
+
+        if (newMapping.length === 0) {
+          throw new Error(ERROR_MESSAGES.TYPE_MAPPING_CREATION_FAILED);
+        }
+
+        return newMapping[0];
+      },
+      "createTypeMapping",
+      { typeMapping }
+    );
+  }
+
+  async updateOrCreateTypeMapping(
+    typeMapping: NewTypeMappingType
+  ): PromiseReturn<TypeMappingType> {
+    return this.withErrorHandling(
+      async () => {
+        const [existingMappingError, existingMapping] = await this.getTypeMapping(
+          typeMapping.type,
+          typeMapping.companyId,
+          typeMapping.calendlyEventTypeId
+        );
+
+        if (existingMappingError) throw existingMappingError;
+
+        if (existingMapping) {
+          const [updateError, updatedMapping] = await this.updateTypeMapping(typeMapping);
+          if (updateError) throw updateError;
+          return updatedMapping;
+        }
+        const [createError, newMapping] = await this.createTypeMapping(typeMapping);
+        if (createError) throw createError;
+        return newMapping;
+      },
+      "updateOrCreateTypeMapping",
+      { typeMapping }
+    );
+  }
+
 
   async getAllTypeMappings(
     companyId: string,
@@ -119,9 +223,7 @@ export class DatabaseQueries {
     );
   }
 
-  async checkExistingEventTypes(
-    eventTypes: NewCalEventType[],
-  ): PromiseReturn<{
+  async checkExistingEventTypes(eventTypes: NewCalEventType[]): PromiseReturn<{
     existing: CalEventType[];
     new: NewCalEventType[];
     hasConflicts: boolean;
