@@ -4,7 +4,7 @@ import { CalendlyEventSidebar } from "./calendly-event-sidebar";
 import { useState } from "react";
 import { SettingsDataRes } from "@/lib/calint-setup";
 import { CalEventType } from "@/db/schema";
-import { env } from "process";
+import { env } from "@/lib/env";
 
 const SetupFrame = ({
   settingsData,
@@ -16,6 +16,8 @@ const SetupFrame = ({
 
   const handleSaveMappings = async (mappings: MappingSelections) => {
     try {
+      console.log(env.NEXT_PUBLIC_BASE_URL);
+      
       await fetch(env.NEXT_PUBLIC_BASE_URL + "/api/v1/healthcheck");
       // Implement your API call here to save the mappings
       //await api.saveMappings(eventType.id, mappings);

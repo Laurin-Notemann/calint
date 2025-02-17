@@ -19,7 +19,7 @@ export const env = createEnv({
   },
   runtimeEnv: {
     BASE_URL: process.env.BASE_URL,
-    NEXT_PUBLIC_BASE_URL: process.env.BASE_URL,
+    NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
     DATABASE_URL: process.env.DATABASE_URL,
     PIPEDRIVE_CLIENT_ID: process.env.PIPEDRIVE_CLIENT_ID,
     PIPEDRIVE_CLIENT_SECRET: process.env.PIPEDRIVE_CLIENT_SECRET,
