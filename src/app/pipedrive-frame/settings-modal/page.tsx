@@ -20,7 +20,7 @@ function PipedriveFrameContent() {
     queryKey: ["settingsData"],
     queryFn: async (): Promise<SettingsDataRes> => {
       const res = await fetch(
-        env.BASE_URL +
+        env.NEXT_PUBLIC_BASE_URL +
           "/api/v1/settings-modal?userId=" +
           searchParams.get("userId"),
       );
