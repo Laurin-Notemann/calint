@@ -6,6 +6,8 @@ const logger = createLogger("jsonpipedrive");
 export async function GET(request: NextRequest) {
   logger.warn(JSON.stringify(request))
 
+  logger.warn("test")
+
   const lala = {
     data: {
       id: "leo Leler",
