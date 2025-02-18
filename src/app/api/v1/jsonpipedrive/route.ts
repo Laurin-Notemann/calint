@@ -1,7 +1,10 @@
+import createLogger from "@/utils/logger";
 import { NextRequest, NextResponse } from "next/server";
 
+const logger = createLogger("jsonpipedrive");
+
 export async function GET(request: NextRequest) {
-  console.warn(JSON.stringify(request))
+  logger.warn(JSON.stringify(request))
 
   const lala = {
     data: {
