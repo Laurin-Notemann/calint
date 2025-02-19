@@ -152,7 +152,7 @@ export class PipedriveController {
 
     if (
       errDbDeal &&
-      errDbDeal.error + "" !== ERROR_MESSAGES.PIPEDRIVE_DEAL_NOT_FOUND
+      !errDbDeal.error.toString().includes(ERROR_MESSAGES.PIPEDRIVE_DEAL_NOT_FOUND)
     ) {
       logError(this.logger, errDbDeal.error, { context: "getDealByPerson" });
       return [errDbDeal, null] as const;
@@ -160,7 +160,7 @@ export class PipedriveController {
 
     if (
       (errDbDeal &&
-        errDbDeal.error + "" === ERROR_MESSAGES.PIPEDRIVE_DEAL_NOT_FOUND) ||
+        errDbDeal.error.toString().includes(ERROR_MESSAGES.PIPEDRIVE_DEAL_NOT_FOUND)) ||
       !dbDeal
     ) {
       if (!this.config) {
@@ -247,14 +247,14 @@ export class PipedriveController {
     );
     if (
       errDbDeal &&
-      errDbDeal.error + "" !== ERROR_MESSAGES.PIPEDRIVE_DEAL_NOT_FOUND
+      !errDbDeal.error.toString().includes(ERROR_MESSAGES.PIPEDRIVE_DEAL_NOT_FOUND)
     ) {
       return [errDbDeal, null] as const;
     }
 
     if (
       errDbDeal &&
-      errDbDeal.error + "" === ERROR_MESSAGES.PIPEDRIVE_DEAL_NOT_FOUND
+      errDbDeal.error.toString().includes(ERROR_MESSAGES.PIPEDRIVE_DEAL_NOT_FOUND)
     ) {
       if (!this.config) {
         const err = new Error(
@@ -331,14 +331,14 @@ export class PipedriveController {
       await this.querier.getPipedrivePersonByPipedriveId(companyId, personId);
     if (
       errDbPerson &&
-      errDbPerson.error + "" !== ERROR_MESSAGES.PIPEDRIVE_PERSON_NOT_FOUND
+      !errDbPerson.error.toString().includes(ERROR_MESSAGES.PIPEDRIVE_PERSON_NOT_FOUND)
     ) {
       return [errDbPerson, null] as const;
     }
 
     if (
       errDbPerson &&
-      errDbPerson.error + "" === ERROR_MESSAGES.PIPEDRIVE_PERSON_NOT_FOUND
+      errDbPerson.error.toString().includes(ERROR_MESSAGES.PIPEDRIVE_PERSON_NOT_FOUND)
     ) {
       if (!this.config) {
         const err = new Error(
@@ -431,14 +431,14 @@ export class PipedriveController {
       await this.querier.getPipedrivePersonByEmail(companyId, email);
     if (
       errDbPerson &&
-      errDbPerson.error + "" !== ERROR_MESSAGES.PIPEDRIVE_PERSON_NOT_FOUND
+      !errDbPerson.error.toString().includes(ERROR_MESSAGES.PIPEDRIVE_PERSON_NOT_FOUND)
     ) {
       return [errDbPerson, null] as const;
     }
 
     if (
       errDbPerson &&
-      errDbPerson.error + "" === ERROR_MESSAGES.PIPEDRIVE_PERSON_NOT_FOUND
+      errDbPerson.error.toString().includes(ERROR_MESSAGES.PIPEDRIVE_PERSON_NOT_FOUND)
     ) {
       if (!this.config) {
         const err = new Error(

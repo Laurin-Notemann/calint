@@ -147,8 +147,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL("/error", request.url));
     }
 
-    getCompany.calendlyOrgUri = user.resource.current_organization;
-
     if (getCompany.calendlyOrgUri) {
       logger.info(
         { uri: getCompany.calendlyOrgUri },
@@ -156,6 +154,8 @@ export async function GET(request: NextRequest) {
       );
       return NextResponse.redirect(new URL("/topipedrive", request.url));
     }
+
+    getCompany.calendlyOrgUri = user.resource.current_organization;
 
     const [updateErr, _] = await querier.updateCompany(getCompany);
 
