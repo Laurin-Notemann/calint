@@ -23,7 +23,6 @@ import {
   pipedriveActivityTypes,
   pipedriveDeals,
   pipedrivePeople,
-  PipedrivePerson,
   TypeMappingType,
   User,
   UserCalendly,
@@ -39,7 +38,7 @@ export type PromiseReturn<T> = Promise<
 >;
 
 export class DatabaseQueries {
-  constructor() {}
+  constructor() { }
 
   private createError = (
     message: string,
@@ -844,13 +843,19 @@ export class DatabaseQueries {
       async () => {
         const [error, company] = await this.getCompany(companyValues.domain);
 
-        if (error) throw error;
+        if (error) {
+          if (error.message === ERROR_MESSAGES.COMPANY_NOT_FOUND) {
+            const [createError, createdCompany] = await this.createCompany(companyValues);
+            if (createError) throw createError;
+            return createdCompany;
+          } else {
+            throw error;
+          }
+        }
+
         if (company) return company;
 
-        const [createError, createdCompany] =
-          await this.createCompany(companyValues);
-        if (createError) throw createError;
-        return createdCompany;
+        throw new Error("Unexpected state: No company and no error");
       },
       "createCompanyOrReturnCompany",
       { companyValues },
