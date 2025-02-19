@@ -1,9 +1,9 @@
 import { createLogger, logError } from "./logger";
 
-const logger = createLogger("database");
+export const dbLogger = createLogger("database");
 
 export const logDBError = (operation: string, error: any, context?: object) => {
-  logError(logger, error, {
+  logError(dbLogger, error, {
     type: "database_error",
     operation,
     ...context,
@@ -11,7 +11,7 @@ export const logDBError = (operation: string, error: any, context?: object) => {
 };
 
 export const logDBOperation = (operation: string, details?: object) => {
-  logger.info({
+  dbLogger.info({
     type: "database_operation",
     operation,
     ...details,

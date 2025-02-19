@@ -28,7 +28,7 @@ import {
   UserCalendly,
   users,
 } from "./schema";
-import { logDBError, logDBOperation } from "@/utils/db-logger";
+import { dbLogger, logDBError, logDBOperation } from "@/utils/db-logger";
 import { GetCurrentUserResponseAllOfData, TokenResponse } from "pipedrive/v1";
 
 import { ERROR_MESSAGES } from "@/lib/constants";
@@ -844,6 +844,9 @@ export class DatabaseQueries {
         const [error, company] = await this.getCompany(companyValues.domain);
 
         if (error) {
+          dbLogger.info(error.error + '')
+          dbLogger.info(ERROR_MESSAGES.COMPANY_NOT_FOUND)
+          dbLogger.info(error.error + "" === ERROR_MESSAGES.COMPANY_NOT_FOUND)
           if (error.error + "" === ERROR_MESSAGES.COMPANY_NOT_FOUND) {
             const [createError, createdCompany] = await this.createCompany(companyValues);
             if (createError) throw createError;
