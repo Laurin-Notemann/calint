@@ -104,12 +104,12 @@ function remapMappingsToNewTypeMappingType(
 
   (Object.keys(mappings) as Array<keyof MappingSelections>).forEach((type) => {
     const activityType = mappings[type];
-    if (activityType !== undefined) {
+    if (activityType) {
       typeMappings.push({
         type: type as TypeMappingType["type"],
         companyId,
         calendlyEventTypeId: eventTypeId,
-        pipedriveActivityTypeId: activityType ? activityType.id : null,
+        pipedriveActivityTypeId: activityType.id,
       });
     }
   });

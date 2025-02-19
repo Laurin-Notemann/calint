@@ -20,12 +20,13 @@ export async function POST(request: NextRequest) {
     querier,
   );
 
-  const [err, res] = await calintSetup.handleCalendlyWebhook(body);
+  //const [err, res] = await calintSetup.handleCalendlyWebhook(body);
 
-  if (err) {
-    logError(logger, err, { context: "/webhook post route" });
-    return NextResponse.json({ error: err.message }, { status: 400 });
-  }
+  //if (err) {
+  //  logError(logger, err, { context: "/webhook post route" });
+  //  return NextResponse.json({ error: err.message }, { status: 400 });
+  //}
 
-  return NextResponse.json(res);
+  //return NextResponse.json(res);
+  return NextResponse.json("Ok");
 }

@@ -181,7 +181,7 @@ export const userRelations = relations(users, ({ many }) => ({
 }));
 
 export const calendlyEventsRelations = relations(calendlyEvents, ({ one }) => ({
-  pipedriveActivitie: one(pipedriveActivities),
+  pipedriveActivity: one(pipedriveActivities),
 }));
 
 export const eventTypeRelations = relations(calEventTypes, ({ many }) => ({

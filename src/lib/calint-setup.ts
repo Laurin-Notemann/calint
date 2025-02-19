@@ -5,10 +5,10 @@ import { PipedriveController } from "./pipedrive/pipedrive-controller";
 import {
   CalEventType,
   NewCalendlyEvent,
-  NewPipedriveActivity,
   PipedriveActivity,
   PipedriveActivityType,
   PipedriveDeal,
+  TypeEnum,
   TypeMappingType,
 } from "@/db/schema";
 import { InviteePayload, WebhookPayload } from "./calendly-client";
@@ -21,6 +21,8 @@ export type SettingsDataRes = {
     typeMappings: TypeMappingType[];
   };
 };
+
+type StatusType = TypeEnum[number];
 
 export class CalintSetup {
   private logger = createLogger("CalintSetup");
@@ -69,42 +71,84 @@ export class CalintSetup {
       await this.querier.getTypeMappingsByEventTypeId(dbEventType.id);
     if (errGetTypeMappings) return [errGetTypeMappings, null] as const;
 
-    const createdMappings = dbTypeMappings.find(
-      (mapping) => mapping.type === "created",
-    );
-    if (!createdMappings)
-      return [
-        {
-          message: "Die hütte brennt (kein create mapping found",
-          error: new Error("oops"),
-        },
-        null,
-      ] as const;
     const [errDeal, deal] = await this.pipedriveController.getDeal(
       body.payload,
       pipedriveUser.companyId,
     );
     if (errDeal) return [errDeal, null] as const;
-    // New Event
-    if (body.event === "invitee.created" && !body.payload.old_invitee)
+
+    if (body.event === "invitee.created" && !body.payload.old_invitee) {
+      const createdMapping = dbTypeMappings.find(
+        (mapping) => mapping.type === "created",
+      );
+      if (!createdMapping)
+        return [
+          {
+            message: "Die hütte brennt (kein create mapping found)",
+            error: new Error("oops"),
+          },
+          null,
+        ] as const;
       return await this.webhookCreate(
-        createdMappings,
+        createdMapping,
         body.payload,
         deal,
         fetchActivityUser,
       );
+    }
 
     // canceled event
-    if (body.event === "invitee.canceled" && !body.payload.rescheduled)
-      return await this.webhookCanceled();
+    if (body.event === "invitee.canceled" && !body.payload.rescheduled) {
+      const cancelledMapping = dbTypeMappings.find(
+        (mapping) => mapping.type === "cancelled",
+      );
+      if (!cancelledMapping)
+        return [
+          {
+            message: "Die hütte brennt (kein cancelled mapping found)",
+            error: new Error("oops"),
+          },
+          null,
+        ] as const;
+      return await this.webhookCancelled(body.payload, cancelledMapping);
+    }
 
     // canceled and rescheduled -> change activity in pipedrive to rescheduled
-    if (body.event === "invitee.canceled" && body.payload.rescheduled)
-      return await this.webhookRescheduledChangeActivityType();
+    if (body.event === "invitee.canceled" && body.payload.rescheduled) {
+      const rescheduledMapping = dbTypeMappings.find(
+        (mapping) => mapping.type === "rescheduled",
+      );
+      if (!rescheduledMapping)
+        return [
+          {
+            message: "Die hütte brennt (kein rescheduled mapping found)",
+            error: new Error("oops"),
+          },
+          null,
+        ] as const;
+      return await this.webhookCancelled(body.payload, rescheduledMapping);
+    }
 
     // new event but from a rescheduled one -> create new acitvity
-    if (body.event === "invitee.created" && body.payload.old_invitee)
-      return await this.webhookRescheduledCreateNewActivity();
+    if (body.event === "invitee.created" && body.payload.old_invitee) {
+      const rescheduledMapping = dbTypeMappings.find(
+        (mapping) => mapping.type === "created",
+      );
+      if (!rescheduledMapping)
+        return [
+          {
+            message: "Die hütte brennt (kein rescheduledMapping mapping found)",
+            error: new Error("oops"),
+          },
+          null,
+        ] as const;
+      return await this.webhookCreate(
+        rescheduledMapping,
+        body.payload,
+        deal,
+        fetchActivityUser,
+      );
+    }
 
     return [
       {
@@ -143,17 +187,26 @@ export class CalintSetup {
     return [null, pipedriveActivity] as const;
   }
 
-  //check for old_invitee in the create webhook and rescheduled field
-  //check the canceled for rescheduled = true
-  // and the created event if it has a rescheduled link
-  private async webhookRescheduledChangeActivityType(): PromiseReturn<boolean> {
-    return [null, true] as const;
-  }
-  private async webhookRescheduledCreateNewActivity(): PromiseReturn<boolean> {
-    return [null, true] as const;
-  }
-  private async webhookCanceled(): PromiseReturn<boolean> {
-    return [null, true] as const;
+  private async webhookCancelled(
+    payload: InviteePayload,
+    mapping: TypeMappingType,
+  ): PromiseReturn<PipedriveActivity> {
+    const [errGetEvent, dbEventGet] = await this.querier.getEventByUri(
+      payload.uri,
+    );
+    if (errGetEvent) return [errGetEvent, null] as const;
+
+    dbEventGet.status = mapping.type;
+
+    const [errEventUpdate, dbEventUpdate] =
+      await this.querier.updateCalendlyEvent(dbEventGet);
+    if (errEventUpdate) return [errEventUpdate, null] as const;
+
+    const [errActivityUpdateApi, apiActivityUpdate] =
+      await this.pipedriveController.updateActivity(dbEventUpdate, mapping);
+    if (errActivityUpdateApi) return [errActivityUpdateApi, null] as const;
+
+    return [null, apiActivityUpdate] as const;
   }
 
   async getAndSaveAllEventTypesAndActivityTypes(userId: number) {
@@ -189,24 +242,18 @@ export class CalintSetup {
       calAcc.refreshToken,
     );
 
-    //const sharedEventTypesStartTime = Date.now();
-    //const [eventTypesErrTwo] =
-    //  await this.calendlyController.findSharedEventTypes(
-    //    pipedriveUser.id,
-    //    pipedriveUser.companyId,
-    //  );
-    //logElapsedTime(
-    //  this.logger,
-    //  sharedEventTypesStartTime,
-    //  "Finding shared event types",
-    //);
-    //if (eventTypesErrTwo) {
-    //  logError(this.logger, eventTypesErrTwo.error, {
-    //    context: "getAndSaveAllEventTypesAndActivityTypes",
-    //    userId,
-    //  });
-    //  return [getUserErr, null] as const;
-    //}
+    const [eventTypesErrTwo] =
+      await this.calendlyController.findSharedEventTypes(
+        pipedriveUser.id,
+        pipedriveUser.companyId,
+      );
+    if (eventTypesErrTwo) {
+      logError(this.logger, eventTypesErrTwo.error, {
+        context: "getAndSaveAllEventTypesAndActivityTypes",
+        userId,
+      });
+      return [getUserErr, null] as const;
+    }
 
     const [err, dbEventTypes] = await this.querier.getAllEventTypes(
       pipedriveUser.companyId,
@@ -218,8 +265,6 @@ export class CalintSetup {
       });
       return [err, null] as const;
     }
-
-    this.logger.warn("Hallo");
 
     const [errMappings, dbMappings] = await this.querier.getAllTypeMappings(
       pipedriveUser.companyId,

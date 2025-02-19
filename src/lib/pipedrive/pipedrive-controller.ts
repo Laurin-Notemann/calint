@@ -22,6 +22,8 @@ import {
   NewPipedriveActivityType,
   NewPipedriveDeal,
   NewPipedrivePerson,
+  PipedriveActivity,
+  PipedriveActivityType,
   PipedriveDeal,
   PipedrivePerson,
   TypeMappingType,
@@ -44,6 +46,80 @@ export class PipedriveController {
       redirectUri: env.PIPEDRIVE_REDIRECT_URL,
     });
     this.querier = querier;
+  }
+
+  async updateActivity(dbEvent: CalendlyEvent, mapping: TypeMappingType) {
+    const [errActivityGet, dbActivityGet] =
+      await this.querier.getPipedriveActivityByEventId(dbEvent.id);
+    if (errActivityGet) return [errActivityGet, null] as const;
+
+    if (!this.config) {
+      const err = new Error(
+        "this.config was not set (call triggerTokenUpdate before using updateActivity)",
+      );
+      logError(this.logger, err, { context: "updateActivity" });
+      return [
+        {
+          message: "",
+          error: err,
+        },
+        null,
+      ] as const;
+    }
+
+    const api = new ActivitiesApi(this.config);
+
+    try {
+      const [errActivityTypeGet, dbActivityTypeGet] =
+        await this.querier.getPipedriveActivityTypeById(
+          mapping.pipedriveActivityTypeId,
+        );
+      if (errActivityTypeGet) return [errActivityTypeGet, null] as const;
+
+      const res = await api.updateActivity({
+        id: dbActivityGet.pipedriveId,
+        AddActivityRequest: {
+          type: dbActivityTypeGet.name,
+          done: true,
+        },
+      });
+
+      if (!res.success || !res.data || res.data) {
+        const err = new Error(
+          "No deal found for the given person in Pipedrive",
+        );
+        logError(this.logger, err, { context: "updateActivity" });
+        return [
+          {
+            message: "" + err,
+            error: err,
+          },
+          null,
+        ] as const;
+      }
+
+      this.logger.info(res.data[0]);
+
+      dbActivityGet.activityTypeId = mapping.pipedriveActivityTypeId;
+      const [errActivityUpdate, dbActivityUpdate] =
+        await this.querier.updatePipedriveActivity(dbActivityGet);
+      if (errActivityUpdate) return [errActivityUpdate, null] as const;
+
+      return [null, dbActivityUpdate] as const;
+    } catch (error) {
+      const err = new Error("API call to update Activity failed.");
+      logError(this.logger, err, {
+        context: "updateActivity",
+        originalError: error,
+      });
+      return [
+        {
+          message: "" + err,
+          error: err,
+        },
+        null,
+      ] as const;
+    }
   }
 
   async getDeal(

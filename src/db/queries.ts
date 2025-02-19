@@ -73,6 +73,88 @@ export class DatabaseQueries {
     }
   }
 
+  async updateCalendlyEvent(
+    event: CalendlyEvent,
+  ): PromiseReturn<CalendlyEvent> {
+    return this.withErrorHandling(
+      async () => {
+        const updatedEvent = await db
+          .update(calendlyEvents)
+          .set(event)
+          .where(eq(calendlyEvents.uri, event.uri))
+          .returning();
+
+        if (updatedEvent.length === 0) {
+          throw new Error(ERROR_MESSAGES.CALENDLY_EVENT_UPDATE_FAILED);
+        }
+
+        return updatedEvent[0];
+      },
+      "updateCalendlyEvent",
+      { event },
+    );
+  }
+
+  async updatePipedriveActivity(
+    activity: PipedriveActivity,
+  ): PromiseReturn<PipedriveActivity> {
+    return this.withErrorHandling(
+      async () => {
+        const updatedActivity = await db
+          .update(pipedriveActivities)
+          .set(activity)
+          .where(eq(pipedriveActivities.id, activity.id))
+          .returning();
+
+        if (updatedActivity.length === 0) {
+          throw new Error(ERROR_MESSAGES.PIPEDRIVE_ACTIVITY_UPDATE_FAILED);
+        }
+
+        return updatedActivity[0];
+      },
+      "updatePipedriveActivity",
+      { activity },
+    );
+  }
+
+  async getPipedriveActivityByEventId(eventId: string) {
+    return this.withErrorHandling(
+      async () => {
+        const activity = await db
+          .select()
+          .from(pipedriveActivities)
+          .where(eq(pipedriveActivities.calendlyEventId, eventId));
+
+        if (activity.length !== 1) {
+          throw new Error(ERROR_MESSAGES.PIPEDRIVE_ACTIVITY_NOT_FOUND);
+        }
+
+        return activity[0];
+      },
+      "getPipedriveActivityById",
+      { eventId },
+    );
+  }
+
+  async getPipedriveActivityById(id: string) {
+    return this.withErrorHandling(
+      async () => {
+        const activity = await db
+          .select()
+          .from(pipedriveActivities)
+          .where(eq(pipedriveActivities.id, id));
+
+        if (activity.length !== 1) {
+          throw new Error(ERROR_MESSAGES.PIPEDRIVE_ACTIVITY_NOT_FOUND);
+        }
+
+        return activity[0];
+      },
+      "getPipedriveActivityById",
+      { id },
+    );
+  }
+
   async getPipedriveActivityTypeById(id: string) {
     return this.withErrorHandling(
       async () => {
@@ -287,6 +369,25 @@ export class DatabaseQueries {
       },
       "createPipedriveActivity",
       { newActivity },
+    );
+  }
+
+  async getEventByUri(uri: string): PromiseReturn<CalendlyEvent> {
+    return this.withErrorHandling(
+      async () => {
+        const event = await db
+          .select()
+          .from(calendlyEvents)
+          .where(eq(calendlyEvents.uri, uri));
+
+        if (event.length !== 1) {
+          throw new Error(ERROR_MESSAGES.CALENDLY_EVENT_NOT_FOUND);
+        }
+
+        return event[0];
+      },
+      "getEventByUri",
+      { uri },
     );
   }
 
@@ -804,6 +905,7 @@ export class DatabaseQueries {
           .insert(users)
           .values({
             id: user.id,
+            email: user.email!,
             name: user.name,
             accessToken,
             refreshToken,
@@ -850,6 +952,7 @@ export class DatabaseQueries {
         await db.insert(calendlyAccs).values({
           userId,
           uri: calendlyUser.uri,
+          email: calendlyUser.email,
           name: calendlyUser.name,
           organization: calendlyUser.current_organization,
           accessToken,
