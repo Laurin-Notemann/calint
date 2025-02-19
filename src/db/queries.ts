@@ -38,7 +38,7 @@ export type PromiseReturn<T> = Promise<
 >;
 
 export class DatabaseQueries {
-  constructor() {}
+  constructor() { }
 
   private createError = (
     message: string,
@@ -844,7 +844,7 @@ export class DatabaseQueries {
         const [error, company] = await this.getCompany(companyValues.domain);
 
         if (error) {
-          if (error.error + "".includes(ERROR_MESSAGES.COMPANY_NOT_FOUND)) {
+          if (error.error.toString().includes(ERROR_MESSAGES.COMPANY_NOT_FOUND)) {
             const [createError, createdCompany] =
               await this.createCompany(companyValues);
             if (createError) throw createError;
