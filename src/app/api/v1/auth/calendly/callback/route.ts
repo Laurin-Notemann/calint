@@ -26,13 +26,13 @@ export async function GET(request: NextRequest) {
     const calClient = new CalendlyClient({}); // important need new client for every request
 
     const [tokenErr, token] = await calClient.getAccessToken(code);
-
     logger.info({ token }, "Received Calendly tokens");
-
     if (tokenErr) {
       logError(logger, tokenErr.error, { context: "getAccessToken" });
       return NextResponse.redirect(new URL("/error", request.url));
     }
+
+    calClient.refreshToken = token.refresh_token
 
     const [error, user] = await calClient.getUserInfo();
 

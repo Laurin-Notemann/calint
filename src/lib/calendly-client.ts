@@ -11,7 +11,7 @@ import {
 export class CalendlyClient {
   private logger = createLogger("CalendlyClient");
   private accessToken: string;
-  private refreshToken: string;
+  refreshToken: string;
   private baseUrl = "https://api.calendly.com";
   private authUrl = "https://auth.calendly.com";
   private lastTokenRefresh: number = 0;
