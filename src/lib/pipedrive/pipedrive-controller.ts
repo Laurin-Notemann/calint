@@ -1,15 +1,34 @@
 import {
   ActivityTypesApi,
+  BaseUser,
   Configuration,
   GetCurrentUserResponseAllOfData,
   OAuth2Configuration,
   TokenResponse,
   UsersApi,
 } from "pipedrive/v1";
+import {
+  ActivitiesApi,
+  ActivitiesApiAddActivityRequest,
+  DealsApi,
+  PersonsApi,
+} from "pipedrive/v2";
 import { env } from "../env";
 import { DatabaseQueries, PromiseReturn, querier } from "@/db/queries";
 import createLogger, { logError } from "@/utils/logger";
-import { NewPipedriveActivityType } from "@/db/schema";
+import {
+  CalendlyEvent,
+  NewPipedriveActivity,
+  NewPipedriveActivityType,
+  NewPipedriveDeal,
+  NewPipedrivePerson,
+  PipedriveDeal,
+  PipedrivePerson,
+  TypeMappingType,
+} from "@/db/schema";
+import { InviteePayload } from "../calendly-client";
+import { ERROR_MESSAGES } from "../constants";
+import dayjs from "dayjs";
 
 export class PipedriveController {
   oauth2: OAuth2Configuration;
@@ -25,6 +44,492 @@ export class PipedriveController {
       redirectUri: env.PIPEDRIVE_REDIRECT_URL,
     });
     this.querier = querier;
+  }
+
+  async getDeal(
+    payload: InviteePayload,
+    companyId: string,
+  ): PromiseReturn<PipedriveDeal> {
+    if (payload.tracking.salesforce_uuid) {
+      const dealId = parseInt(payload.tracking.salesforce_uuid);
+      return await this.getDealByPipedriveIdAndCompanyId(companyId, dealId);
+    }
+
+    const email = payload.email;
+    const [errPerson, person] = await this.getAndSavePersonByEmail(
+      companyId,
+      email,
+    );
+    if (errPerson) return [errPerson, null] as const;
+
+    return await this.getDealByPerson(companyId, person);
+  }
+
+  async getDealByPerson(
+    companyId: string,
+    person: PipedrivePerson,
+  ): PromiseReturn<PipedriveDeal> {
+    const [errDbDeal, dbDeal] = await this.querier.getPipedriveDealByPersonId(
+      companyId,
+      person.id,
+    );
+
+    if (
+      errDbDeal &&
+      errDbDeal.error + "" !== ERROR_MESSAGES.PIPEDRIVE_DEAL_NOT_FOUND
+    ) {
+      logError(this.logger, errDbDeal.error, { context: "getDealByPerson" });
+      return [errDbDeal, null] as const;
+    }
+
+    if (
+      (errDbDeal &&
+        errDbDeal.error + "" === ERROR_MESSAGES.PIPEDRIVE_DEAL_NOT_FOUND) ||
+      !dbDeal
+    ) {
+      if (!this.config) {
+        const err = new Error(
+          "this.config was not set (call triggerTokenUpdate before using getDealByPerson)",
+        );
+        logError(this.logger, err, { context: "getDealByPerson" });
+        return [
+          {
+            message: "",
+            error: err,
+          },
+          null,
+        ] as const;
+      }
+
+      const api = new DealsApi(this.config);
+
+      try {
+        const res = await api.getDeals({
+          person_id: person.pipedriveId,
+          limit: 1, // We only need one deal
+          sort_by: "add_time", // Get the most recently added deal
+          sort_direction: "desc",
+        });
+
+        if (!res.success || !res.data || res.data.length === 0) {
+          const err = new Error(
+            "No deal found for the given person in Pipedrive",
+          );
+          logError(this.logger, err, { context: "getDealByPerson" });
+          return [
+            {
+              message: "" + err,
+              error: err,
+            },
+            null,
+          ] as const;
+        }
+
+        const dealData = res.data[0];
+
+        const newDeal: NewPipedriveDeal = {
+          companyId,
+          pipedriveId: dealData.id!,
+          name: dealData.title!,
+          pipedrivePeopleId: person.id,
+        };
+
+        const [errSave, savedDeal] =
+          await this.querier.createPipedriveDeal(newDeal);
+        if (errSave) {
+          logError(this.logger, errSave.error, { context: "getDealByPerson" });
+          return [errSave, null] as const;
+        }
+
+        return [null, savedDeal] as const;
+      } catch (error) {
+        const err = new Error("API call to get deals failed.");
+        logError(this.logger, err, {
+          context: "getDealByPerson",
+          originalError: error,
+        });
+        return [
+          {
+            message: "" + err,
+            error: err,
+          },
+          null,
+        ] as const;
+      }
+    }
+
+    return [null, dbDeal] as const;
+  }
+
+  async getDealByPipedriveIdAndCompanyId(
+    companyId: string,
+    dealId: number,
+  ): PromiseReturn<PipedriveDeal> {
+    const [errDbDeal, dbDeal] = await this.querier.getPipedriveDealByDealId(
+      companyId,
+      dealId,
+    );
+    if (
+      errDbDeal &&
+      errDbDeal.error + "" !== ERROR_MESSAGES.PIPEDRIVE_DEAL_NOT_FOUND
+    ) {
+      return [errDbDeal, null] as const;
+    }
+
+    if (
+      errDbDeal &&
+      errDbDeal.error + "" === ERROR_MESSAGES.PIPEDRIVE_DEAL_NOT_FOUND
+    ) {
+      if (!this.config) {
+        const err = new Error(
+          "this.config was not set (call triggerTokenUpdate before using createAndSaveActivity)",
+        );
+        logError(this.logger, err, { context: "createAndSaveActivity" });
+        return [
+          {
+            message: "",
+            error: err,
+          },
+          null,
+        ] as const;
+      }
+
+      const api = new DealsApi(this.config);
+
+      const res = await api.getDeal({
+        id: dealId,
+      });
+
+      if (!res.success || !res.data) {
+        const err = new Error("Deal not found in Pipedrive");
+        logError(this.logger, err, {
+          context: "getDealByPipedriveIdAndCompanyId",
+        });
+        return [
+          {
+            message: "" + err,
+            error: err,
+          },
+          null,
+        ] as const;
+      }
+
+      const [errPerson, person] = await this.getAndSavePersonByPipedriveId(
+        companyId,
+        res.data.person_id!,
+      );
+      if (errPerson) return [errPerson, null] as const;
+
+      const newDeal: NewPipedriveDeal = {
+        companyId,
+        pipedriveId: res.data.id!,
+        name: res.data.title!,
+        pipedrivePeopleId: person.id,
+      };
+
+      const [errSave, savedDeal] =
+        await this.querier.createPipedriveDeal(newDeal);
+      if (errSave) return [errSave, null] as const;
+
+      return [null, savedDeal] as const;
+    }
+
+    if (!dbDeal) {
+      return [
+        {
+          message: "Something went wrong.",
+          error: new Error("Something went wrong."),
+        },
+        null,
+      ] as const;
+    }
+
+    return [null, dbDeal] as const;
+  }
+
+  async getAndSavePersonByPipedriveId(
+    companyId: string,
+    personId: number,
+  ): PromiseReturn<PipedrivePerson> {
+    const [errDbPerson, dbPerson] =
+      await this.querier.getPipedrivePersonByPipedriveId(companyId, personId);
+    if (
+      errDbPerson &&
+      errDbPerson.error + "" !== ERROR_MESSAGES.PIPEDRIVE_PERSON_NOT_FOUND
+    ) {
+      return [errDbPerson, null] as const;
+    }
+
+    if (
+      errDbPerson &&
+      errDbPerson.error + "" === ERROR_MESSAGES.PIPEDRIVE_PERSON_NOT_FOUND
+    ) {
+      if (!this.config) {
+        const err = new Error(
+          "this.config was not set (call triggerTokenUpdate before using getAndSavePersonByPipedriveId)",
+        );
+        logError(this.logger, err, {
+          context: "getAndSavePersonByPipedriveId",
+        });
+        return [
+          {
+            message: "",
+            error: err,
+          },
+          null,
+        ] as const;
+      }
+
+      const api = new PersonsApi(this.config);
+
+      try {
+        const res = await api.getPerson({
+          id: personId,
+        });
+
+        if (!res.success || !res.data) {
+          const err = new Error("Person not found in Pipedrive.");
+          logError(this.logger, err, {
+            context: "getAndSavePersonByPipedriveId",
+          });
+          return [
+            {
+              message: "" + err,
+              error: err,
+            },
+            null,
+          ] as const;
+        }
+
+        const personData = res.data;
+
+        const newPerson: NewPipedrivePerson = {
+          companyId,
+          pipedriveId: personData.id!,
+          name: personData.name!,
+          email:
+            personData.emails && personData.emails.length > 0
+              ? personData.emails[0].value!
+              : "",
+        };
+
+        const [errSave, savedPerson] =
+          await this.querier.createPipedrivePerson(newPerson);
+        if (errSave) return [errSave, null] as const;
+
+        return [null, savedPerson] as const;
+      } catch (error) {
+        const err = new Error("API call to get person failed.");
+        logError(this.logger, err, {
+          context: "getAndSavePersonByPipedriveId",
+          originalError: error,
+        });
+        return [
+          {
+            message: "" + err,
+            error: err,
+          },
+          null,
+        ] as const;
+      }
+    }
+
+    if (!dbPerson) {
+      return [
+        {
+          message: "Something went wrong.",
+          error: new Error("Something went wrong."),
+        },
+        null,
+      ] as const;
+    }
+
+    return [null, dbPerson] as const;
+  }
+
+  async getAndSavePersonByEmail(
+    companyId: string,
+    email: string,
+  ): PromiseReturn<PipedrivePerson> {
+    const [errDbPerson, dbPerson] =
+      await this.querier.getPipedrivePersonByEmail(companyId, email);
+    if (
+      errDbPerson &&
+      errDbPerson.error + "" !== ERROR_MESSAGES.PIPEDRIVE_PERSON_NOT_FOUND
+    ) {
+      return [errDbPerson, null] as const;
+    }
+
+    if (
+      errDbPerson &&
+      errDbPerson.error + "" === ERROR_MESSAGES.PIPEDRIVE_PERSON_NOT_FOUND
+    ) {
+      if (!this.config) {
+        const err = new Error(
+          "this.config was not set (call triggerTokenUpdate before using getAndSavePersonByEmail)",
+        );
+        logError(this.logger, err, { context: "getAndSavePersonByEmail" });
+        return [
+          {
+            message: "",
+            error: err,
+          },
+          null,
+        ] as const;
+      }
+
+      const api = new PersonsApi(this.config);
+
+      try {
+        const res = await api.searchPersons({
+          term: email.toLowerCase(),
+          fields: "email",
+          exact_match: false,
+        });
+
+        if (
+          !res.success ||
+          !res.data ||
+          !res.data.items ||
+          res.data.items.length === 0 ||
+          !res.data.items[0].item
+        ) {
+          const err = new Error("Person not found in Pipedrive.");
+          logError(this.logger, err, { context: "getAndSavePersonByEmail" });
+          return [
+            {
+              message: "" + err,
+              error: err,
+            },
+            null,
+          ] as const;
+        }
+
+        const personData = res.data.items[0].item;
+
+        const newPerson: NewPipedrivePerson = {
+          companyId,
+          pipedriveId: personData.id!,
+          name: personData.name!,
+          email: email,
+        };
+
+        const [errSave, savedPerson] =
+          await this.querier.createPipedrivePerson(newPerson);
+        if (errSave) return [errSave, null] as const;
+
+        return [null, savedPerson] as const;
+      } catch (error) {
+        const err = new Error("API call to search person failed.");
+        logError(this.logger, err, {
+          context: "getAndSavePersonByEmail",
+          originalError: error,
+        });
+        return [
+          {
+            message: "" + err,
+            error: err,
+          },
+          null,
+        ] as const;
+      }
+    }
+
+    if (!dbPerson) {
+      return [
+        {
+          message: "Something went wrong.",
+          error: new Error("Something went wrong."),
+        },
+        null,
+      ] as const;
+    }
+
+    return [null, dbPerson] as const;
+  }
+
+  async createAndSaveActivity(
+    deal: PipedriveDeal,
+    eventPayload: InviteePayload,
+    mapping: TypeMappingType,
+    user: BaseUser,
+    event: CalendlyEvent,
+  ) {
+    if (!this.config) {
+      const err = new Error(
+        "this.config was not set (call triggerTokenUpdate before using createAndSaveActivity)",
+      );
+      logError(this.logger, err, { context: "createAndSaveActivity" });
+      return [
+        {
+          message: "",
+          error: err,
+        },
+        null,
+      ] as const;
+    }
+
+    const [errCompany, company] = await this.querier.getCompany(deal.companyId);
+    if (errCompany) return [errCompany, null] as const;
+
+    const [errActivityType, activityType] =
+      await this.querier.getPipedriveActivityTypeById(
+        mapping.pipedriveActivityTypeId,
+      );
+    if (errActivityType) return [errActivityType, null] as const;
+
+    const api = new ActivitiesApi(this.config);
+
+    const startTime = dayjs(eventPayload.scheduled_event.start_time);
+    const endTime = dayjs(eventPayload.scheduled_event.end_time);
+
+    const durationInSeconds = endTime.diff(startTime, "second");
+
+    const [errPerson, person] = await this.querier.getPipedrivePersonById(
+      deal.pipedrivePeopleId,
+    );
+    if (errPerson) return [errPerson, null] as const;
+
+    const body: ActivitiesApiAddActivityRequest = {
+      AddActivityRequest: {
+        subject: activityType.name,
+        type: activityType.name,
+        due_date: eventPayload.scheduled_event.start_time,
+        duration: durationInSeconds.toString(),
+        deal_id: deal.pipedriveId,
+        owner_id: user.id,
+        org_id: company.pipedriveId,
+        person_id: person.pipedriveId,
+      },
+    };
+
+    const res = await api.addActivity(body);
+
+    if (!res.success || !res.data) {
+      const err = new Error("Api call addActivity failed.");
+      logError(this.logger, err, { context: "createAndSaveActivity" });
+      return [
+        {
+          message: "" + err,
+          error: err,
+        },
+        null,
+      ] as const;
+    }
+
+    const dbNewActivity: NewPipedriveActivity = {
+      name: res.data.subject!,
+      pipedriveId: res.data.id!,
+      pipedriveDealId: deal.id,
+      calendlyEventId: event.id,
+      activityTypeId: mapping.pipedriveActivityTypeId,
+    };
+
+    const [errCreateActivity, createdActivity] =
+      await this.querier.createPipedriveActivity(dbNewActivity);
+    if (errCreateActivity) return [errCreateActivity, null] as const;
+
+    return [null, createdActivity] as const;
   }
 
   async getAndSaveActiviyTypes(userId: number, companyId: string) {
@@ -142,6 +647,43 @@ export class PipedriveController {
         logError(this.logger, err, { context: "createUser" });
         return [err, null] as const;
       }
+    }
+
+    return [null, user] as const;
+  }
+  async getUserByEmail(email: string): PromiseReturn<BaseUser> {
+    if (!this.config) {
+      return [
+        {
+          message: "",
+          error: null,
+        },
+        null,
+      ] as const;
+    }
+
+    const api = new UsersApi(this.config);
+    const data = await api.getUsers();
+
+    if (!data.data) {
+      return [
+        {
+          message: "",
+          error: null,
+        },
+        null,
+      ] as const;
+    }
+
+    const user = data.data.find((user) => user.email === email);
+    if (!user) {
+      return [
+        {
+          message: "",
+          error: null,
+        },
+        null,
+      ] as const;
     }
 
     return [null, user] as const;

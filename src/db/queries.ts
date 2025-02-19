@@ -2,17 +2,28 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import db from "./db";
 import {
   calendlyAccs,
+  CalendlyEvent,
+  calendlyEvents,
   CalEventType,
   calEventTypes,
   companies,
   Company,
   eventActivityTypesMapping,
+  NewCalendlyEvent,
   NewCalEventType,
   NewCompany,
+  NewPipedriveActivity,
   NewPipedriveActivityType,
+  NewPipedriveDeal,
+  NewPipedrivePerson,
   NewTypeMappingType,
+  pipedriveActivities,
+  PipedriveActivity,
   PipedriveActivityType,
   pipedriveActivityTypes,
+  pipedriveDeals,
+  pipedrivePeople,
+  PipedrivePerson,
   TypeMappingType,
   User,
   UserCalendly,
@@ -60,6 +71,262 @@ export class DatabaseQueries {
         null,
       ] as const;
     }
+  }
+
+  async getPipedriveActivityTypeById(id: string) {
+    return this.withErrorHandling(
+      async () => {
+        const activityType = await db
+          .select()
+          .from(pipedriveActivityTypes)
+          .where(eq(pipedriveActivityTypes.id, id));
+
+        if (activityType.length !== 1) {
+          throw new Error(ERROR_MESSAGES.PIPEDRIVE_ACTIVITY_TYPE_NOT_FOUND);
+        }
+
+        return activityType[0];
+      },
+      "getPipedriveActivityTypeById",
+      { id },
+    );
+  }
+
+  async getPipedriveDealByPersonId(companyId: string, personId: string) {
+    return this.withErrorHandling(
+      async () => {
+        const deal = await db
+          .select()
+          .from(pipedriveDeals)
+          .where(
+            and(
+              eq(pipedriveDeals.companyId, companyId),
+              eq(pipedriveDeals.pipedrivePeopleId, personId),
+            ),
+          );
+
+        if (deal.length !== 1) {
+          throw new Error(ERROR_MESSAGES.PIPEDRIVE_DEAL_NOT_FOUND);
+        }
+
+        return deal[0];
+      },
+      "getPipedriveDealByDealId",
+      { companyId, personId },
+    );
+  }
+
+  async getPipedriveDealByDealId(companyId: string, dealId: number) {
+    return this.withErrorHandling(
+      async () => {
+        const deal = await db
+          .select()
+          .from(pipedriveDeals)
+          .where(
+            and(
+              eq(pipedriveDeals.companyId, companyId),
+              eq(pipedriveDeals.pipedriveId, dealId),
+            ),
+          );
+
+        if (deal.length !== 1) {
+          throw new Error(ERROR_MESSAGES.PIPEDRIVE_DEAL_NOT_FOUND);
+        }
+
+        return deal[0];
+      },
+      "getPipedriveDealByDealId",
+      { companyId, dealId },
+    );
+  }
+
+  async getPipedrivePersonById(id: string) {
+    return this.withErrorHandling(
+      async () => {
+        const person = await db
+          .select()
+          .from(pipedrivePeople)
+          .where(eq(pipedrivePeople.id, id));
+
+        if (person.length !== 1) {
+          throw new Error(ERROR_MESSAGES.PIPEDRIVE_PERSON_NOT_FOUND);
+        }
+
+        return person[0];
+      },
+      "getPipedrivePersonById",
+      { id },
+    );
+  }
+
+  async getPipedrivePersonByPipedriveId(
+    companyId: string,
+    pipedriveId: number,
+  ) {
+    return this.withErrorHandling(
+      async () => {
+        const person = await db
+          .select()
+          .from(pipedrivePeople)
+          .where(
+            and(
+              eq(pipedrivePeople.companyId, companyId),
+              eq(pipedrivePeople.pipedriveId, pipedriveId),
+            ),
+          );
+
+        if (person.length !== 1) {
+          throw new Error(ERROR_MESSAGES.PIPEDRIVE_PERSON_NOT_FOUND);
+        }
+
+        return person[0];
+      },
+      "getPipedrivePersonByPipedriveId",
+      { companyId, pipedriveId },
+    );
+  }
+
+  async getPipedrivePersonByEmail(companyId: string, email: string) {
+    return this.withErrorHandling(
+      async () => {
+        const person = await db
+          .select()
+          .from(pipedrivePeople)
+          .where(
+            and(
+              eq(pipedrivePeople.companyId, companyId),
+              eq(pipedrivePeople.email, email),
+            ),
+          );
+
+        if (person.length !== 1) {
+          throw new Error(ERROR_MESSAGES.PIPEDRIVE_PERSON_NOT_FOUND);
+        }
+
+        return person[0];
+      },
+      "getPipedrivePersonByEmail",
+      { companyId, email },
+    );
+  }
+
+  async createPipedriveDeal(newDeal: NewPipedriveDeal) {
+    return this.withErrorHandling(
+      async () => {
+        const deal = await db
+          .insert(pipedriveDeals)
+          .values(newDeal)
+          .returning();
+
+        if (deal.length !== 1) {
+          throw new Error(ERROR_MESSAGES.PIPEDRIVE_DEAL_CREATION_FAILED);
+        }
+
+        return deal[0];
+      },
+      "createPipedriveDeal",
+      { newDeal },
+    );
+  }
+
+  async createPipedrivePerson(newPerson: NewPipedrivePerson) {
+    return this.withErrorHandling(
+      async () => {
+        const person = await db
+          .insert(pipedrivePeople)
+          .values(newPerson)
+          .returning();
+
+        if (person.length !== 1) {
+          throw new Error(ERROR_MESSAGES.PIPEDRIVE_PERSON_CREATION_FAILED);
+        }
+
+        return person[0];
+      },
+      "createPipedrivePerson",
+      { newPerson },
+    );
+  }
+
+  async createCalendlyEvent(
+    newEvent: NewCalendlyEvent,
+  ): PromiseReturn<CalendlyEvent> {
+    return this.withErrorHandling(
+      async () => {
+        const calendlyEvent = await db
+          .insert(calendlyEvents)
+          .values(newEvent)
+          .returning();
+
+        if (calendlyEvent.length !== 1) {
+          throw new Error(ERROR_MESSAGES.CALENDLY_EVENT_CREATION_FAILED);
+        }
+
+        return calendlyEvent[0];
+      },
+      "createCalendlyEvent",
+      { newEvent },
+    );
+  }
+
+  async createPipedriveActivity(
+    newActivity: NewPipedriveActivity,
+  ): PromiseReturn<PipedriveActivity> {
+    return this.withErrorHandling(
+      async () => {
+        const activity = await db
+          .insert(pipedriveActivities)
+          .values(newActivity)
+          .returning();
+
+        if (activity.length !== 1) {
+          throw new Error(ERROR_MESSAGES.PIPEDRIVE_ACTIVITY_CREATION_FAILED);
+        }
+
+        return activity[0];
+      },
+      "createPipedriveActivity",
+      { newActivity },
+    );
+  }
+
+  async getEventTypeByUri(uri: string): PromiseReturn<CalEventType> {
+    return this.withErrorHandling(
+      async () => {
+        const eventType = await db
+          .select()
+          .from(calEventTypes)
+          .where(eq(calEventTypes.uri, uri));
+
+        if (eventType.length !== 1) {
+          throw new Error(ERROR_MESSAGES.EVENT_TYPE_NOT_FOUND);
+        }
+
+        return eventType[0];
+      },
+      "getEventTypeByUri",
+      { uri },
+    );
+  }
+
+  async getTypeMappingsByEventTypeId(
+    calendlyEventTypeId: string,
+  ): PromiseReturn<TypeMappingType[]> {
+    return this.withErrorHandling(
+      () => {
+        return db
+          .select()
+          .from(eventActivityTypesMapping)
+          .where(
+            eq(
+              eventActivityTypesMapping.calendlyEventTypeId,
+              calendlyEventTypeId,
+            ),
+          );
+      },
+      "getTypeMapping",
+      { calendlyEventTypeId },
+    );
   }
 
   async getTypeMapping(
@@ -366,6 +633,28 @@ export class DatabaseQueries {
     );
   }
 
+  async getUserAndCalendlyAccByCalendlyEmail(
+    email: string,
+  ): PromiseReturn<UserCalendly> {
+    return this.withErrorHandling(
+      async () => {
+        const res = await db
+          .select()
+          .from(users)
+          .innerJoin(calendlyAccs, eq(users.id, calendlyAccs.userId))
+          .where(eq(calendlyAccs.email, email));
+
+        if (res.length != 1) {
+          throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+        }
+
+        return res[0];
+      },
+      "getUserAndCalendlyAccByCalendlyEmail",
+      { email },
+    );
+  }
+
   async getUserAndCalendlyAcc(userId: number): PromiseReturn<UserCalendly> {
     return this.withErrorHandling(
       async () => {
@@ -506,6 +795,7 @@ export class DatabaseQueries {
         const [error, company] = await this.createCompanyOrReturnCompany({
           name: user.company_name,
           domain: user.company_domain!,
+          pipedriveId: user.company_id!,
         });
 
         if (error) throw error;

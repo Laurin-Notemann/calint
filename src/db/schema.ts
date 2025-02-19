@@ -9,16 +9,25 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 
+export const typeMappings = pgEnum("type_mappings", [
+  "created",
+  "rescheduled",
+  "cancelled",
+  "noshow",
+]);
+
 export const companies = pgTable("companies", {
   id: uuid("id").primaryKey().defaultRandom().notNull(),
   name: text("name"),
   domain: text("domain").notNull().unique(),
+  pipedriveId: integer().notNull(),
   calendlyOrgUri: text("calendly_org_uri").default(sql`NULL`),
 });
 
 export const calendlyAccs = pgTable("calendly_accs", {
   uri: varchar("uri").primaryKey(),
   name: text("name"),
+  email: text("email").notNull(),
   organization: text("organization"),
   refreshToken: text("refresh_token").notNull(),
   accessToken: text("access_token").notNull(),
@@ -34,6 +43,7 @@ export const calendlyAccs = pgTable("calendly_accs", {
 export const users = pgTable("users", {
   id: integer("id").primaryKey(),
   name: text("name").notNull(), // uses pipedrive name
+  email: text("email").notNull(),
   refreshToken: text("refresh_token").notNull(),
   accessToken: text("access_token").notNull(),
   expiresIn: integer("expires_in").notNull(),
@@ -56,15 +66,55 @@ export const companySettings = pgTable("company_settings", {
 
 export const calendlyEvents = pgTable("calendly_events", {
   id: uuid("id").primaryKey().defaultRandom().notNull(),
-  slug: text("slug").notNull(),
+  uri: text("uri").notNull(),
+  status: typeMappings().notNull(),
+});
+
+export const pipedriveDeals = pgTable("pipedrive_deals", {
+  id: uuid("id").primaryKey().defaultRandom().notNull(),
+  name: text("name").notNull(),
+  pipedriveId: integer().notNull(),
+  companyId: uuid("company_id")
+    .notNull()
+    .references(() => companies.id, {
+      onDelete: "cascade",
+    }),
+  pipedrivePeopleId: uuid("pipedrive_people_id")
+    .notNull()
+    .references(() => pipedrivePeople.id, {
+      onDelete: "cascade",
+    }),
+});
+
+export const pipedrivePeople = pgTable("pipedrive_people", {
+  id: uuid("id").primaryKey().defaultRandom().notNull(),
+  email: text("email").notNull(),
+  name: text("name").notNull(),
+  pipedriveId: integer().notNull(),
+  companyId: uuid("company_id")
+    .notNull()
+    .references(() => companies.id, {
+      onDelete: "cascade",
+    }),
 });
 
 export const pipedriveActivities = pgTable("pipedrive_activities", {
   id: uuid("id").primaryKey().defaultRandom().notNull(),
-  slug: text("slug").notNull(),
+  name: text("name").notNull(),
+  pipedriveId: integer("pipedrive_id").notNull(),
   calendlyEventId: uuid("calendly_event_id")
     .notNull()
     .references(() => calendlyEvents.id, {
+      onDelete: "cascade",
+    }),
+  activityTypeId: uuid("activity_type_id")
+    .notNull()
+    .references(() => pipedriveActivityTypes.id, {
+      onDelete: "cascade",
+    }),
+  pipedriveDealId: uuid("pipedrive_deal_id")
+    .notNull()
+    .references(() => pipedriveDeals.id, {
       onDelete: "cascade",
     }),
 });
@@ -95,13 +145,6 @@ export const pipedriveActivityTypes = pgTable("pipedrive_activity_types", {
     }),
 });
 
-export const typeMappings = pgEnum("type_mappings", [
-  "created",
-  "rescheduled",
-  "cancelled",
-  "noshow",
-]);
-
 export const eventActivityTypesMapping = pgTable(
   "event_activity_types_mapping",
   {
@@ -112,12 +155,11 @@ export const eventActivityTypesMapping = pgTable(
       .references(() => calEventTypes.id, {
         onDelete: "cascade",
       }),
-    pipedriveActivityTypeId: uuid("pipedrive_activity_type_id").references(
-      () => pipedriveActivityTypes.id,
-      {
+    pipedriveActivityTypeId: uuid("pipedrive_activity_type_id")
+      .notNull()
+      .references(() => pipedriveActivityTypes.id, {
         onDelete: "cascade",
-      },
-    ),
+      }),
     companyId: uuid("company_id")
       .notNull()
       .references(() => companies.id, {
@@ -131,20 +173,37 @@ export const companyRelations = relations(companies, ({ many }) => ({
   calEventTypes: many(calEventTypes),
   pipedriveActivityTypes: many(pipedriveActivityTypes),
   eventActivityTypesMapping: many(eventActivityTypesMapping),
+  pipedriveDeals: many(pipedriveDeals),
 }));
 
 export const userRelations = relations(users, ({ many }) => ({
   calendlyAccs: many(calendlyAccs),
 }));
 
+export const calendlyEventsRelations = relations(calendlyEvents, ({ one }) => ({
+  pipedriveActivitie: one(pipedriveActivities),
+}));
+
 export const eventTypeRelations = relations(calEventTypes, ({ many }) => ({
   typeMappings: many(eventActivityTypesMapping),
+}));
+
+export const pipedrivePeopleRelations = relations(
+  pipedrivePeople,
+  ({ many }) => ({
+    pipedriveDeals: many(pipedriveDeals),
+  }),
+);
+
+export const pipedriveDealRelations = relations(pipedriveDeals, ({ many }) => ({
+  pipedriveActivities: many(pipedriveActivities),
 }));
 
 export const activityTypeRelations = relations(
   pipedriveActivityTypes,
   ({ many }) => ({
     typeMappings: many(eventActivityTypesMapping),
+    pipedriveActivities: many(pipedriveActivities),
   }),
 );
 
@@ -170,3 +229,15 @@ export type TypeMappingType = typeof eventActivityTypesMapping.$inferSelect;
 export type NewTypeMappingType = typeof eventActivityTypesMapping.$inferInsert;
 
 export type TypeEnum = typeof typeMappings.enumValues;
+
+export type PipedriveActivity = typeof pipedriveActivities.$inferSelect;
+export type NewPipedriveActivity = typeof pipedriveActivities.$inferInsert;
+
+export type CalendlyEvent = typeof calendlyEvents.$inferSelect;
+export type NewCalendlyEvent = typeof calendlyEvents.$inferInsert;
+
+export type PipedriveDeal = typeof pipedriveDeals.$inferSelect;
+export type NewPipedriveDeal = typeof pipedriveDeals.$inferInsert;
+
+export type PipedrivePerson = typeof pipedrivePeople.$inferSelect;
+export type NewPipedrivePerson = typeof pipedrivePeople.$inferInsert;

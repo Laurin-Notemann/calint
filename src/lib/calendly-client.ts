@@ -398,3 +398,138 @@ interface GetOrganizationMembershipResponse {
   collection: OrganizationMembership[];
   pagination: Pagination;
 }
+
+export type WebhookPayload = {
+  event:
+    | "invitee.created"
+    | "invitee.canceled"
+    | "invitee_no_show.created"
+    | "invitee_no_show.deleted"
+    | "routing_form_submission.created";
+  created_at: string;
+  created_by: string;
+  payload: InviteePayload;
+};
+
+export type InviteePayload = {
+  uri: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  name: string;
+  status: "active" | "canceled";
+  questions_and_answers: InviteeQuestionAndAnswer[];
+  timezone: string | null;
+  event: string;
+  created_at: string;
+  updated_at: string;
+  tracking: InviteeTracking;
+  text_reminder_number: string | null;
+  rescheduled: boolean;
+  old_invitee: string | null;
+  new_invitee: string | null;
+  cancel_url: string;
+  reschedule_url: string;
+  routing_form_submission: string | null;
+  payment: {
+    external_id: string;
+    provider: "stripe" | "paypal";
+    amount: number;
+    currency: "AUD" | "CAD" | "EUR" | "GBP" | "USD";
+    terms: string | null;
+    successful: boolean;
+  } | null;
+  no_show: {
+    uri: string;
+    created_at: string;
+  } | null;
+  reconfirmation: {
+    created_at: string;
+    confirmed_at: string | null;
+  } | null;
+  scheduling_method: "instant_book" | null;
+  invitee_scheduled_by: string | null;
+  scheduled_event: {
+    uri: string;
+    name: string | null;
+    meeting_notes_plain: string | null;
+    meeting_notes_html: string | null;
+    status: "active" | "canceled";
+    start_time: string;
+    end_time: string;
+    event_type: string;
+    location: Location;
+    invitees_counter: {
+      total: number;
+      active: number;
+      limit: number;
+    };
+    created_at: string;
+    updated_at: string;
+    event_memberships: {
+      user: string;
+      user_email: string;
+      user_name: string;
+    }[];
+    event_guests: Guest[];
+    cancellation?: Cancellation;
+  };
+};
+
+export type RoutingFormSubmission = {
+  uri: string;
+  routing_form: string;
+  questions_and_answers: SubmissionQuestionAndAnswer[];
+  tracking: SubmissionTracking;
+  result: SubmissionResult;
+  submitter: string | null;
+  submitter_type: "Invitee" | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type InviteeQuestionAndAnswer = {
+  success: boolean;
+};
+
+export type InviteeTracking = {
+  utm_campaign: string | null;
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_content: string | null;
+  utm_term: string | null;
+  salesforce_uuid: string | null;
+};
+
+export type Guest = {
+  email: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Cancellation = {
+  canceled_by: string;
+  reason: string | null;
+  canceler_type: "host" | "invitee";
+  created_at: string;
+};
+
+export type SubmissionQuestionAndAnswer = {
+  question_uuid: string;
+  question: string;
+  answer: string;
+};
+
+export type SubmissionTracking = {
+  utm_campaign: string | null;
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_content: string | null;
+  utm_term: string | null;
+  salesforce_uuid: string | null;
+};
+
+export type SubmissionResult = {
+  type: string;
+  value: string;
+};

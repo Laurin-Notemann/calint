@@ -3,6 +3,7 @@ import {
   CalendlyClient,
   GetEventTypesResponse,
   EventType,
+  WebhookPayload,
 } from "../calendly-client";
 import createLogger, { logElapsedTime, logError } from "@/utils/logger";
 import { NewCalEventType } from "@/db/schema";
