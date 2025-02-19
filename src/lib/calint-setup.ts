@@ -8,7 +8,6 @@ import {
   PipedriveActivity,
   PipedriveActivityType,
   PipedriveDeal,
-  TypeEnum,
   TypeMappingType,
 } from "@/db/schema";
 import { InviteePayload, WebhookPayload } from "./calendly-client";
@@ -21,8 +20,6 @@ export type SettingsDataRes = {
     typeMappings: TypeMappingType[];
   };
 };
-
-type StatusType = TypeEnum[number];
 
 export class CalintSetup {
   private logger = createLogger("CalintSetup");

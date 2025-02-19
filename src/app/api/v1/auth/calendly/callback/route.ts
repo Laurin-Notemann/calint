@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL("/error", request.url));
     }
 
-    calClient.refreshToken = token.refresh_token
+    calClient.updateCalendlyTokens(token);
 
     const [error, user] = await calClient.getUserInfo();
 

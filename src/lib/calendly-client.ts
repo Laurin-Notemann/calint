@@ -113,6 +113,7 @@ export class CalendlyClient {
           operation: endpoint,
           status: res.status,
           statusText: res.statusText,
+          response: data,
         });
         return [
           {
@@ -158,7 +159,8 @@ export class CalendlyClient {
       return [null, null] as const;
     }
 
-    const startTime = now;
+    this.logger.warn("TOKEN: " + this.refreshToken)
+
     const [err, data] = await this.makeRequest<GetAccessTokenRes>(
       "/oauth/token",
       {
@@ -192,8 +194,6 @@ export class CalendlyClient {
     this.updateCalendlyTokens(data);
     this.organization = data.organization;
     this.lastTokenRefresh = now;
-
-    logElapsedTime(this.logger, startTime, "Refreshing access token");
 
     return [null, data] as const;
   }
@@ -271,7 +271,7 @@ export class CalendlyClient {
     });
   }
 
-  private updateCalendlyTokens(tokens: GetAccessTokenRes) {
+  updateCalendlyTokens(tokens: GetAccessTokenRes) {
     this.accessToken = tokens.access_token;
     this.refreshToken = tokens.refresh_token;
     this.organization = tokens.organization;
@@ -401,11 +401,11 @@ interface GetOrganizationMembershipResponse {
 
 export type WebhookPayload = {
   event:
-    | "invitee.created"
-    | "invitee.canceled"
-    | "invitee_no_show.created"
-    | "invitee_no_show.deleted"
-    | "routing_form_submission.created";
+  | "invitee.created"
+  | "invitee.canceled"
+  | "invitee_no_show.created"
+  | "invitee_no_show.deleted"
+  | "routing_form_submission.created";
   created_at: string;
   created_by: string;
   payload: InviteePayload;
