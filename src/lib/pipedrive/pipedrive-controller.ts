@@ -581,12 +581,11 @@ export class PipedriveController {
       const body: ActivitiesApiAddActivityRequest = {
         AddActivityRequest: {
           subject: activityType.name,
-          type: activityType.name,
-          due_date: eventPayload.scheduled_event.start_time,
-          duration: durationInSeconds.toString(),
+          type: activityType.keyString,
+          due_date: startTime.toDate().toString(),
+          //duration: durationInSeconds.toString(),
           deal_id: deal.pipedriveId,
           owner_id: user.id,
-          org_id: company.pipedriveId,
           //person_id: person.pipedriveId,
           participants: [{
             person_id: person.pipedriveId,
@@ -663,6 +662,7 @@ export class PipedriveController {
       (activityType) => {
         return {
           name: activityType.name,
+          keyString: activityType.key_string,
           pipedriveId: activityType.id,
           companyId,
         };
