@@ -571,6 +571,11 @@ export class PipedriveController {
       const startTime = dayjs(eventPayload.scheduled_event.start_time);
       const endTime = dayjs(eventPayload.scheduled_event.end_time);
 
+      this.logger.warn('StartDate: ', startTime.toString())
+      this.logger.warn('StartDate: ', startTime.toDate().toString())
+      this.logger.warn('StartDate: ', startTime.toDate().toJSON())
+      this.logger.warn('StartDate: ', startTime.toDate())
+
       const durationInSeconds = endTime.diff(startTime, "second");
 
       const [errPerson, person] = await this.querier.getPipedrivePersonById(
@@ -582,7 +587,7 @@ export class PipedriveController {
         AddActivityRequest: {
           subject: activityType.name,
           type: activityType.keyString,
-          due_date: startTime.toJSON(),
+          due_date: startTime.toISOString(),
           //duration: durationInSeconds.toString(),
           deal_id: deal.pipedriveId,
           owner_id: user.id,
