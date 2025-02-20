@@ -588,7 +588,7 @@ export class PipedriveController {
         AddActivityRequest: {
           subject: activityType.name,
           type: activityType.keyString,
-          due_date: startTime.toISOString(),
+          due_date: startTime.toDate().toString(),
           //duration: durationInSeconds.toString(),
           deal_id: deal.pipedriveId,
           owner_id: user.id,
