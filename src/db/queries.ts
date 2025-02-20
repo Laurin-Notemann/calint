@@ -992,14 +992,14 @@ export class DatabaseQueries {
           throw new Error("Invalid expiration date");
         }
 
-        dbLogger.warn("Creds: " + creds)
+        dbLogger.warn("Creds: " + JSON.stringify(creds))
 
         const updatedUser = await db
           .update(calendlyAccs)
           .set(formattedCreds)
           .where(eq(calendlyAccs.uri, calendlyUri));
 
-        dbLogger.warn("user: " + updatedUser)
+        dbLogger.warn("user: " + JSON.stringify(updatedUser))
 
         return true;
       },
