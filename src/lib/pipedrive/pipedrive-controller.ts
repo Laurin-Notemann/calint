@@ -571,6 +571,7 @@ export class PipedriveController {
       const startTime = dayjs(eventPayload.scheduled_event.start_time);
       const endTime = dayjs(eventPayload.scheduled_event.end_time);
 
+      this.logger.warn('StartDate: ', eventPayload.scheduled_event.start_time)
       this.logger.warn('StartDate: ', startTime.toString())
       this.logger.warn('StartDate: ', startTime.toDate().toString())
       this.logger.warn('StartDate: ', startTime.toDate().toJSON())
