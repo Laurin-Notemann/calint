@@ -1,15 +1,29 @@
 {
-	"type": "object",
-	"required": [
-		"id",
-		"header"
-	],
-	"properties": {
-		"id": {
-			"$ref": "#/definitions/text"
-		},
-		"header": {
-			"$ref": "#/definitions/header"
-		}
-	}
+  "type": "array",
+  "items": {
+    "required": [
+      "id",
+      "header"
+    ],
+    "properties": {
+      "id": {
+        "$ref": "#/definitions/numerical"
+      },
+      "header": {
+        "$ref": "#/definitions/header"
+      },
+      "join_meeting": {
+        "$ref": "#/definitions/text",
+        "label": "Join Meeting"
+      },
+      "cancel_meeting": {
+        "$ref": "#/definitions/text",
+        "label": "Cancel Meeting"
+      },
+      "reschedule_meeting": {
+        "$ref": "#/definitions/text",
+        "label": "Reschedule Meeting"
+      }
+    }
+  }
 }

@@ -67,6 +67,9 @@ export const companySettings = pgTable("company_settings", {
 export const calendlyEvents = pgTable("calendly_events", {
   id: uuid("id").primaryKey().defaultRandom().notNull(),
   uri: text("uri").notNull(),
+  joinUrl: text("join_url").notNull(),
+  rescheduleUrl: text("reschedule_url").notNull(),
+  cancelUrl: text("cancel_url").notNull(),
   status: typeMappings().notNull(),
 });
 

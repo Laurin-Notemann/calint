@@ -5,6 +5,7 @@ import {
   GetCurrentUserResponseAllOfData,
   OAuth2Configuration,
   TokenResponse,
+  DealsApi as DealsApiV1,
   UsersApi,
 } from "pipedrive/v1";
 import {
@@ -54,6 +55,61 @@ export class PipedriveController {
       redirectUri: env.PIPEDRIVE_REDIRECT_URL,
     });
     this.querier = querier;
+  }
+
+  async getActivityByPipedriveDealId(dealId: number) {
+    if (!this.config) {
+      const err = new Error(
+        "this.config was not set (call triggerTokenUpdate before using getDealByPerson)",
+      );
+      logError(this.logger, err, { context: "getDealByPerson" });
+      return [
+        {
+          message: "",
+          error: err,
+        },
+        null,
+      ] as const;
+    }
+
+    const api = new DealsApiV1(this.config);
+
+    try {
+      const res = await api.getDealActivities({
+        id: dealId,
+        done: 0,
+      });
+      if (!res.success || !res.data) {
+        const err = new Error(
+          "No activites found for the given deal in Pipedrive",
+        );
+        logError(this.logger, err, { context: "getActivityByPipedriveDealId" });
+        return [
+          {
+            message: "" + err,
+            error: err,
+          },
+          null,
+        ] as const;
+      }
+
+      const dealData = res.data;
+
+      return [null, dealData] as const;
+    } catch (error) {
+      const err = new Error("API call to get deals failed.");
+      logError(this.logger, err, {
+        context: "getDealByPerson",
+        originalError: error,
+      });
+      return [
+        {
+          message: "" + err,
+          error: err,
+        },
+        null,
+      ] as const;
+    }
   }
 
   async updateActivity(dbEvent: CalendlyEvent, mapping: TypeMappingType) {
@@ -161,7 +217,9 @@ export class PipedriveController {
 
     if (
       errDbDeal &&
-      !errDbDeal.error.toString().includes(ERROR_MESSAGES.PIPEDRIVE_DEAL_NOT_FOUND)
+      !errDbDeal.error
+        .toString()
+        .includes(ERROR_MESSAGES.PIPEDRIVE_DEAL_NOT_FOUND)
     ) {
       logError(this.logger, errDbDeal.error, { context: "getDealByPerson" });
       return [errDbDeal, null] as const;
@@ -169,7 +227,9 @@ export class PipedriveController {
 
     if (
       (errDbDeal &&
-        errDbDeal.error.toString().includes(ERROR_MESSAGES.PIPEDRIVE_DEAL_NOT_FOUND)) ||
+        errDbDeal.error
+          .toString()
+          .includes(ERROR_MESSAGES.PIPEDRIVE_DEAL_NOT_FOUND)) ||
       !dbDeal
     ) {
       if (!this.configV2) {
@@ -210,7 +270,7 @@ export class PipedriveController {
           ] as const;
         }
 
-        this.logger.warn("GetDeal: " + JSON.stringify(res.data))
+        this.logger.warn("GetDeal: " + JSON.stringify(res.data));
 
         const dealData = res.data[0];
 
@@ -258,20 +318,26 @@ export class PipedriveController {
     );
     if (
       errDbDeal &&
-      !errDbDeal.error.toString().includes(ERROR_MESSAGES.PIPEDRIVE_DEAL_NOT_FOUND)
+      !errDbDeal.error
+        .toString()
+        .includes(ERROR_MESSAGES.PIPEDRIVE_DEAL_NOT_FOUND)
     ) {
       return [errDbDeal, null] as const;
     }
 
     if (
       errDbDeal &&
-      errDbDeal.error.toString().includes(ERROR_MESSAGES.PIPEDRIVE_DEAL_NOT_FOUND)
+      errDbDeal.error
+        .toString()
+        .includes(ERROR_MESSAGES.PIPEDRIVE_DEAL_NOT_FOUND)
     ) {
       if (!this.configV2) {
         const err = new Error(
           "this.config was not set (call triggerTokenUpdate before using getDealByPipedriveIdAndCompanyId)",
         );
-        logError(this.logger, err, { context: "getDealByPipedriveIdAndCompanyId" });
+        logError(this.logger, err, {
+          context: "getDealByPipedriveIdAndCompanyId",
+        });
         return [
           {
             message: "",
@@ -342,14 +408,18 @@ export class PipedriveController {
       await this.querier.getPipedrivePersonByPipedriveId(companyId, personId);
     if (
       errDbPerson &&
-      !errDbPerson.error.toString().includes(ERROR_MESSAGES.PIPEDRIVE_PERSON_NOT_FOUND)
+      !errDbPerson.error
+        .toString()
+        .includes(ERROR_MESSAGES.PIPEDRIVE_PERSON_NOT_FOUND)
     ) {
       return [errDbPerson, null] as const;
     }
 
     if (
       errDbPerson &&
-      errDbPerson.error.toString().includes(ERROR_MESSAGES.PIPEDRIVE_PERSON_NOT_FOUND)
+      errDbPerson.error
+        .toString()
+        .includes(ERROR_MESSAGES.PIPEDRIVE_PERSON_NOT_FOUND)
     ) {
       if (!this.configV2) {
         const err = new Error(
@@ -442,14 +512,18 @@ export class PipedriveController {
       await this.querier.getPipedrivePersonByEmail(companyId, email);
     if (
       errDbPerson &&
-      !errDbPerson.error.toString().includes(ERROR_MESSAGES.PIPEDRIVE_PERSON_NOT_FOUND)
+      !errDbPerson.error
+        .toString()
+        .includes(ERROR_MESSAGES.PIPEDRIVE_PERSON_NOT_FOUND)
     ) {
       return [errDbPerson, null] as const;
     }
 
     if (
       errDbPerson &&
-      errDbPerson.error.toString().includes(ERROR_MESSAGES.PIPEDRIVE_PERSON_NOT_FOUND)
+      errDbPerson.error
+        .toString()
+        .includes(ERROR_MESSAGES.PIPEDRIVE_PERSON_NOT_FOUND)
     ) {
       if (!this.configV2) {
         const err = new Error(
@@ -556,9 +630,17 @@ export class PipedriveController {
       ] as const;
     }
 
-    const [errActivityGet, dbActivityGet] = await this.querier.getPipedriveActivityByEventId(event.id)
-    if (errActivityGet && errActivityGet.error.toString().includes(ERROR_MESSAGES.PIPEDRIVE_ACTIVITY_NOT_FOUND)) {
-      const [errCompany, company] = await this.querier.getCompanyById(deal.companyId);
+    const [errActivityGet, dbActivityGet] =
+      await this.querier.getPipedriveActivityByEventId(event.id);
+    if (
+      errActivityGet &&
+      errActivityGet.error
+        .toString()
+        .includes(ERROR_MESSAGES.PIPEDRIVE_ACTIVITY_NOT_FOUND)
+    ) {
+      const [errCompany, company] = await this.querier.getCompanyById(
+        deal.companyId,
+      );
       if (errCompany) return [errCompany, null] as const;
 
       const [errActivityType, activityType] =
@@ -572,12 +654,12 @@ export class PipedriveController {
       const startTime = dayjs(eventPayload.scheduled_event.start_time);
       const endTime = dayjs(eventPayload.scheduled_event.end_time);
 
-      const formattedDueDate = startTime.format('YYYY-MM-DD');
-      const formattedDueTime = startTime.format('HH:mm');
+      const formattedDueDate = startTime.format("YYYY-MM-DD");
+      const formattedDueTime = startTime.format("HH:mm");
 
-      const durationHours = endTime.diff(startTime, 'hour');
-      const durationMinutes = endTime.diff(startTime, 'minute') % 60;
-      const formattedDuration = `${durationHours.toString().padStart(2, '0')}:${durationMinutes.toString().padStart(2, '0')}`;
+      const durationHours = endTime.diff(startTime, "hour");
+      const durationMinutes = endTime.diff(startTime, "minute") % 60;
+      const formattedDuration = `${durationHours.toString().padStart(2, "0")}:${durationMinutes.toString().padStart(2, "0")}`;
 
       const [errPerson, person] = await this.querier.getPipedrivePersonById(
         deal.pipedrivePeopleId,
@@ -594,10 +676,12 @@ export class PipedriveController {
           deal_id: deal.pipedriveId,
           owner_id: user.id,
           //person_id: person.pipedriveId,
-          participants: [{
-            person_id: person.pipedriveId,
-            primary: true
-          }]
+          participants: [
+            {
+              person_id: person.pipedriveId,
+              primary: true,
+            },
+          ],
         },
       };
 
@@ -631,7 +715,7 @@ export class PipedriveController {
     } else if (errActivityGet) {
       return [errActivityGet, null] as const;
     }
-    return [null, dbActivityGet] as const
+    return [null, dbActivityGet] as const;
   }
 
   async getAndSaveActiviyTypes(userId: number, companyId: string) {

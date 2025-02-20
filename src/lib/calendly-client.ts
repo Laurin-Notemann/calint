@@ -1,11 +1,7 @@
 import { CalendlyUser, CalIntError, querier } from "@/db/queries";
 import { env } from "./env";
 import dayjs from "dayjs";
-import {
-  createLogger,
-  logAPICall,
-  logError,
-} from "@/utils/logger";
+import { createLogger, logAPICall, logError } from "@/utils/logger";
 
 export class CalendlyClient {
   private logger = createLogger("CalendlyClient");
@@ -160,7 +156,7 @@ export class CalendlyClient {
       return [null, null] as const;
     }
 
-    this.logger.warn("TOKEN: " + this.refreshToken)
+    this.logger.warn("TOKEN: " + this.refreshToken);
 
     const [err, data] = await this.makeRequest<GetAccessTokenRes>(
       "/oauth/token",
@@ -334,11 +330,113 @@ interface CustomQuestion {
   include_other: boolean;
 }
 
-interface Location {
-  kind: string;
-  phone_number: number;
-  additional_info: string;
-}
+type Location =
+  | InPersonMeeting
+  | OutboundCall
+  | InboundCall
+  | GoogleConference
+  | ZoomConference
+  | GoToMeetingConference
+  | MicrosoftTeamsConference
+  | CustomLocation
+  | InviteeSpecifiedLocation
+  | WebExConference;
+
+type InPersonMeeting = {
+  type: "physical";
+  location: string;
+  additional_info?: string;
+};
+
+type OutboundCall = {
+  type: "outbound_call";
+  location: string | null;
+};
+
+type InboundCall = {
+  type: "inbound_call";
+  location: string;
+  additional_info?: string;
+};
+
+type GoogleConference = {
+  type: "google_conference";
+  status: "processing" | "initiated" | "pushed" | "failed" | null;
+  join_url: string | null;
+};
+
+type ZoomConference = {
+  type: "zoom";
+  status: "processing" | "initiated" | "pushed" | "failed" | null;
+  join_url: string | null;
+  data: {
+    id: string;
+    settings: {
+      global_dial_in_numbers: Array<{
+        number: string;
+        country: string;
+        type: string;
+        city: string;
+        country_name: string;
+      }>;
+    };
+    extra: {
+      intl_numbers_url: string;
+    };
+    password: string;
+  } | null;
+};
+
+type GoToMeetingConference = {
+  type: "gotomeeting";
+  status: "initiated" | "processing" | "pushed" | "failed" | null;
+  join_url: string | null;
+  data: {
+    uniqueMeetingId: number;
+    conferenceCallInfo: string;
+  } | null;
+};
+
+type MicrosoftTeamsConference = {
+  type: "microsoft_teams_conference";
+  status: "processing" | "initiated" | "pushed" | "failed" | null;
+  join_url: string | null;
+  data: {
+    id: string;
+    audioConferencing: {
+      conferenceId: string;
+      dialinUrl: string;
+      tollNumber: string;
+    } | null;
+  } | null;
+};
+
+type CustomLocation = {
+  type: "custom";
+  location: string | null;
+};
+
+type InviteeSpecifiedLocation = {
+  type: "ask_invitee";
+  location: string;
+};
+
+type WebExConference = {
+  type: "webex_conference";
+  status: "processing" | "initiated" | "pushed" | "failed" | null;
+  join_url: string | null;
+  data: {
+    id: string;
+    telephony: {
+      callInNumbers: Array<{
+        label: string;
+        callInNumber: string;
+        tollType: string;
+      }>;
+    };
+    password: string;
+  } | null;
+};
 
 export interface EventType {
   uri: string;
@@ -404,11 +502,11 @@ interface GetOrganizationMembershipResponse {
 
 export type WebhookPayload = {
   event:
-  | "invitee.created"
-  | "invitee.canceled"
-  | "invitee_no_show.created"
-  | "invitee_no_show.deleted"
-  | "routing_form_submission.created";
+    | "invitee.created"
+    | "invitee.canceled"
+    | "invitee_no_show.created"
+    | "invitee_no_show.deleted"
+    | "routing_form_submission.created";
   created_at: string;
   created_by: string;
   payload: InviteePayload;

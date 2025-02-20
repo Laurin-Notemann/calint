@@ -28,8 +28,12 @@ import {
   UserCalendly,
   users,
 } from "./schema";
-import { dbLogger, logDBError, logDBOperation } from "@/utils/db-logger";
-import { GetCurrentUserResponseAllOfData, TokenResponse } from "pipedrive/v1";
+import { logDBError, logDBOperation } from "@/utils/db-logger";
+import {
+  Activity,
+  GetCurrentUserResponseAllOfData,
+  TokenResponse,
+} from "pipedrive/v1";
 
 import { ERROR_MESSAGES } from "@/lib/constants";
 
@@ -38,7 +42,7 @@ export type PromiseReturn<T> = Promise<
 >;
 
 export class DatabaseQueries {
-  constructor() { }
+  constructor() {}
 
   private createError = (
     message: string,
@@ -70,6 +74,44 @@ export class DatabaseQueries {
         null,
       ] as const;
     }
+  }
+
+  async getCalendlyEventsAndPipeDriveActivitiesByPipedriveActivities(
+    activities: Activity[],
+    companyId: string,
+    dealId: number,
+  ): PromiseReturn<
+    { calendlyEvent: CalendlyEvent; pipedriveActivity: PipedriveActivity }[]
+  > {
+    return this.withErrorHandling(
+      () => {
+        const activityIds = activities.map((activity) => activity.id);
+
+        return db
+          .select({
+            calendlyEvent: calendlyEvents,
+            pipedriveActivity: pipedriveActivities,
+          })
+          .from(pipedriveActivities)
+          .innerJoin(
+            pipedriveDeals,
+            eq(pipedriveActivities.pipedriveDealId, pipedriveDeals.id),
+          )
+          .innerJoin(
+            calendlyEvents,
+            eq(pipedriveActivities.calendlyEventId, calendlyEvents.id),
+          )
+          .where(
+            and(
+              inArray(pipedriveActivities.pipedriveId, activityIds),
+              eq(pipedriveDeals.companyId, companyId),
+              eq(pipedriveDeals.pipedriveId, dealId),
+            ),
+          );
+      },
+      "getCalendlyEventsByPipedriveActivities",
+      { activities, companyId, dealId },
+    );
   }
 
   async updateCalendlyEvent(
@@ -128,7 +170,6 @@ export class DatabaseQueries {
           throw new Error(ERROR_MESSAGES.PIPEDRIVE_ACTIVITY_NOT_FOUND);
         } else if (activity.length > 1)
           throw new Error(ERROR_MESSAGES.PIPEDRIVE_ACTIVITY_TOO_MANY_FOUND);
-
 
         return activity[0];
       },
@@ -848,7 +889,9 @@ export class DatabaseQueries {
         const [error, company] = await this.getCompany(companyValues.domain);
 
         if (error) {
-          if (error.error.toString().includes(ERROR_MESSAGES.COMPANY_NOT_FOUND)) {
+          if (
+            error.error.toString().includes(ERROR_MESSAGES.COMPANY_NOT_FOUND)
+          ) {
             const [createError, createdCompany] =
               await this.createCompany(companyValues);
             if (createError) throw createError;
@@ -999,7 +1042,8 @@ export class DatabaseQueries {
         await db
           .update(calendlyAccs)
           .set(formattedCreds)
-          .where(eq(calendlyAccs.uri, calendlyUri)).returning();
+          .where(eq(calendlyAccs.uri, calendlyUri))
+          .returning();
 
         return true;
       },

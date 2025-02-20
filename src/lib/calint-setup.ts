@@ -13,6 +13,7 @@ import {
 import { InviteePayload, WebhookPayload } from "./calendly-client";
 import { BaseUser } from "pipedrive/v1";
 import { ERROR_MESSAGES } from "./constants";
+import { JsonPanel } from "@/app/api/v1/jsonpipedrive/route";
 
 export type SettingsDataRes = {
   data: {
@@ -35,6 +36,60 @@ export class CalintSetup {
     this.calendlyController = calendlyController;
     this.querier = querier;
     this.pipedriveController = pipedriveController;
+  }
+
+  async getJsonPanelData(
+    userId: number,
+    dealId: number,
+  ): PromiseReturn<JsonPanel> {
+    const [getUserErr, user] = await this.querier.getUserAndCalendlyAcc(userId);
+    if (getUserErr) {
+      logError(this.logger, getUserErr, {
+        context: "getAndSaveAllEventTypesAndActivityTypes",
+        userId,
+      });
+      return [getUserErr, null] as const;
+    }
+
+    const pipedriveUser = user.users;
+
+    await this.pipedriveController.triggerTokenUpdate(pipedriveUser.id);
+
+    const [errActivityGetApi, apiActivityGet] =
+      await this.pipedriveController.getActivityByPipedriveDealId(dealId);
+    if (errActivityGetApi) return [errActivityGetApi, null] as const;
+
+    const [errActivitiesEventsGet, dbActivitiesEventsGet] =
+      await this.querier.getCalendlyEventsAndPipeDriveActivitiesByPipedriveActivities(
+        apiActivityGet,
+        pipedriveUser.companyId,
+        dealId,
+      );
+
+    if (errActivitiesEventsGet) return [errActivitiesEventsGet, null] as const;
+
+    const panelData: JsonPanel = {
+      data: dbActivitiesEventsGet.map((res) => {
+        return {
+          id: res.pipedriveActivity.pipedriveId,
+          header: res.pipedriveActivity.name,
+          join_meeting: {
+            markdown: true,
+            value: `(Join Meeting now)[${res.calendlyEvent.joinUrl}]`, // TODO: The string could be empty, possibly add an error text here
+          },
+          reschedule_meeting: {
+            markdown: true,
+            value: `(Reschedule the meeting)[${res.calendlyEvent.rescheduleUrl}]`,
+          },
+          cancel_meeting: {
+            markdown: true,
+            value: `(Cancel the meeting)[${res.calendlyEvent.cancelUrl}]`,
+          },
+        };
+      }),
+    };
+
+    return [null, panelData] as const;
   }
 
   async handleCalendlyWebhook(
@@ -130,7 +185,7 @@ export class CalintSetup {
     // new event but from a rescheduled one -> create new acitvity
     if (body.event === "invitee.created" && body.payload.old_invitee) {
       const rescheduledMapping = dbTypeMappings.find(
-        (mapping) => mapping.type === "created",
+        (mapping) => mapping.type === "created", // TODO: should this be created or still rescheduled
       );
       if (!rescheduledMapping)
         return [
@@ -166,10 +221,25 @@ export class CalintSetup {
     const newEvent: NewCalendlyEvent = {
       uri: payload.uri,
       status: mapping.type,
+      joinUrl:
+        payload.scheduled_event.location.type === "google_conference"
+          ? payload.scheduled_event.location.join_url
+            ? payload.scheduled_event.location.join_url
+            : ""
+          : "",
+      rescheduleUrl: payload.reschedule_url,
+      cancelUrl: payload.cancel_url,
     };
 
-    const [errEventGet, dbEventGet] = await this.querier.getEventByUri(newEvent.uri)
-    if (errEventGet && errEventGet.error.toString().includes(ERROR_MESSAGES.CALENDLY_EVENT_NOT_FOUND)) {
+    const [errEventGet, dbEventGet] = await this.querier.getEventByUri(
+      newEvent.uri,
+    );
+    if (
+      errEventGet &&
+      errEventGet.error
+        .toString()
+        .includes(ERROR_MESSAGES.CALENDLY_EVENT_NOT_FOUND)
+    ) {
       const [errEventDb, dbEvent] =
         await this.querier.createCalendlyEvent(newEvent);
       if (errEventDb) return [errEventDb, null] as const;
@@ -186,9 +256,8 @@ export class CalintSetup {
 
       return [null, pipedriveActivity] as const;
     } else if (errEventGet || !dbEventGet) {
-      return [errEventGet, null] as const
+      return [errEventGet, null] as const;
     }
-
 
     const [errActivityPipedrive, pipedriveActivity] =
       await this.pipedriveController.createAndSaveActivity(
