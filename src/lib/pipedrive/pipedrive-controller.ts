@@ -8,6 +8,7 @@ import {
   UsersApi,
 } from "pipedrive/v1";
 import {
+  Configuration as ConfigurationV2,
   ActivitiesApi,
   ActivitiesApiAddActivityRequest,
   DealsApi,
@@ -33,6 +34,7 @@ import dayjs from "dayjs";
 export class PipedriveController {
   oauth2: OAuth2Configuration;
   config: Configuration | null = null;
+  configV2: ConfigurationV2 | null = null;
   querier: DatabaseQueries;
   private logger = createLogger("PipedriveController");
   private tokens: TokenResponse | null = null;
@@ -51,7 +53,7 @@ export class PipedriveController {
       await this.querier.getPipedriveActivityByEventId(dbEvent.id);
     if (errActivityGet) return [errActivityGet, null] as const;
 
-    if (!this.config) {
+    if (!this.configV2) {
       const err = new Error(
         "this.config was not set (call triggerTokenUpdate before using updateActivity)",
       );
@@ -65,7 +67,7 @@ export class PipedriveController {
       ] as const;
     }
 
-    const api = new ActivitiesApi(this.config);
+    const api = new ActivitiesApi(this.configV2);
 
     try {
       const [errActivityTypeGet, dbActivityTypeGet] =
@@ -161,7 +163,7 @@ export class PipedriveController {
         errDbDeal.error.toString().includes(ERROR_MESSAGES.PIPEDRIVE_DEAL_NOT_FOUND)) ||
       !dbDeal
     ) {
-      if (!this.config) {
+      if (!this.configV2) {
         const err = new Error(
           "this.config was not set (call triggerTokenUpdate before using getDealByPerson)",
         );
@@ -175,7 +177,7 @@ export class PipedriveController {
         ] as const;
       }
 
-      const api = new DealsApi(this.config);
+      const api = new DealsApi(this.configV2);
 
       try {
         const res = await api.getDeals({
@@ -256,11 +258,11 @@ export class PipedriveController {
       errDbDeal &&
       errDbDeal.error.toString().includes(ERROR_MESSAGES.PIPEDRIVE_DEAL_NOT_FOUND)
     ) {
-      if (!this.config) {
+      if (!this.configV2) {
         const err = new Error(
-          "this.config was not set (call triggerTokenUpdate before using createAndSaveActivity)",
+          "this.config was not set (call triggerTokenUpdate before using getDealByPipedriveIdAndCompanyId)",
         );
-        logError(this.logger, err, { context: "createAndSaveActivity" });
+        logError(this.logger, err, { context: "getDealByPipedriveIdAndCompanyId" });
         return [
           {
             message: "",
@@ -270,7 +272,7 @@ export class PipedriveController {
         ] as const;
       }
 
-      const api = new DealsApi(this.config);
+      const api = new DealsApi(this.configV2);
 
       const res = await api.getDeal({
         id: dealId,
@@ -340,7 +342,7 @@ export class PipedriveController {
       errDbPerson &&
       errDbPerson.error.toString().includes(ERROR_MESSAGES.PIPEDRIVE_PERSON_NOT_FOUND)
     ) {
-      if (!this.config) {
+      if (!this.configV2) {
         const err = new Error(
           "this.config was not set (call triggerTokenUpdate before using getAndSavePersonByPipedriveId)",
         );
@@ -356,7 +358,7 @@ export class PipedriveController {
         ] as const;
       }
 
-      const api = new PersonsApi(this.config);
+      const api = new PersonsApi(this.configV2);
 
       try {
         const res = await api.getPerson({
@@ -440,7 +442,7 @@ export class PipedriveController {
       errDbPerson &&
       errDbPerson.error.toString().includes(ERROR_MESSAGES.PIPEDRIVE_PERSON_NOT_FOUND)
     ) {
-      if (!this.config) {
+      if (!this.configV2) {
         const err = new Error(
           "this.config was not set (call triggerTokenUpdate before using getAndSavePersonByEmail)",
         );
@@ -454,7 +456,7 @@ export class PipedriveController {
         ] as const;
       }
 
-      const api = new PersonsApi(this.config);
+      const api = new PersonsApi(this.configV2);
 
       try {
         const res = await api.searchPersons({
@@ -531,7 +533,7 @@ export class PipedriveController {
     user: BaseUser,
     event: CalendlyEvent,
   ) {
-    if (!this.config) {
+    if (!this.configV2) {
       const err = new Error(
         "this.config was not set (call triggerTokenUpdate before using createAndSaveActivity)",
       );
@@ -556,7 +558,7 @@ export class PipedriveController {
         );
       if (errActivityType) return [errActivityType, null] as const;
 
-      const api = new ActivitiesApi(this.config);
+      const api = new ActivitiesApi(this.configV2);
 
       const startTime = dayjs(eventPayload.scheduled_event.start_time);
       const endTime = dayjs(eventPayload.scheduled_event.end_time);
@@ -865,15 +867,19 @@ export class PipedriveController {
       ] as const;
     }
 
-    if (this.config) {
-      this.config.accessToken = this.oauth2.getAccessToken;
-      this.config.basePath = this.oauth2.basePath;
-    } else {
-      this.config = new Configuration({
-        accessToken: this.oauth2.getAccessToken,
-        basePath: this.oauth2.basePath,
-      });
-    }
+    const accessToken = this.oauth2.getAccessToken;
+    const basePath = this.oauth2.basePath;
+
+    this.config = new Configuration({
+      accessToken,
+      basePath,
+    });
+
+    this.configV2 = new ConfigurationV2({
+      accessToken,
+      basePath,
+    });
+
     return [null, true] as const;
   }
 }
