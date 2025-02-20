@@ -588,7 +588,7 @@ export class PipedriveController {
         AddActivityRequest: {
           subject: activityType.name,
           type: activityType.keyString,
-          due_date: startTime.toDate().toString(),
+          due_date: startTime.toISOString(),
           //duration: durationInSeconds.toString(),
           deal_id: deal.pipedriveId,
           owner_id: user.id,
@@ -599,6 +599,8 @@ export class PipedriveController {
           }]
         },
       };
+
+      this.logger.warn('Due Date being sent to API: ' + startTime.toISOString());
 
       const res = await api.addActivity(body);
 
