@@ -149,7 +149,7 @@ export class PipedriveController {
         },
       });
 
-      if (!res.success || !res.data || res.data) {
+      if (!res.success || !res.data) {
         const err = new Error(
           "No deal found for the given person in Pipedrive",
         );
@@ -162,8 +162,6 @@ export class PipedriveController {
           null,
         ] as const;
       }
-
-      this.logger.info(res.data[0]);
 
       dbActivityGet.activityTypeId = mapping.pipedriveActivityTypeId;
       const [errActivityUpdate, dbActivityUpdate] =

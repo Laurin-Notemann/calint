@@ -1,0 +1,32 @@
+{
+  "type": "object",
+  "required": [
+    "id",
+    "header"
+  ],
+  "properties": {
+    "blocks": {
+      "type": "object",
+      "properties": {
+        "block_key_info": {
+          "$ref": "#/definitions/element-text",
+          "options": {
+            "value": "Thank you for using the cake ordering app!"
+          }
+        }
+      }
+    },
+    "actions": {
+      "type": "object",
+      "properties": {
+        "cancel_action": {
+          "$ref": "#/definitions/action-secondary",
+          "options": {
+            "label": "Cancel",
+            "handler": "cancel"
+          }
+        }
+      }
+    }
+  }
+}
