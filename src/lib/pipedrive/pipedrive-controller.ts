@@ -13,6 +13,7 @@ import {
   ActivitiesApiAddActivityRequest,
   DealsApi,
   PersonsApi,
+  OAuth2Configuration as OAuth2ConfigurationV2,
 } from "pipedrive/v2";
 import { env } from "../env";
 import { DatabaseQueries, PromiseReturn, querier } from "@/db/queries";
@@ -33,14 +34,21 @@ import dayjs from "dayjs";
 
 export class PipedriveController {
   oauth2: OAuth2Configuration;
+  oauth2V2: OAuth2ConfigurationV2;
   config: Configuration | null = null;
   configV2: ConfigurationV2 | null = null;
   querier: DatabaseQueries;
   private logger = createLogger("PipedriveController");
   private tokens: TokenResponse | null = null;
+  private tokensV2: TokenResponse | null = null;
   private userId: number | null = null;
   constructor(querier: DatabaseQueries) {
     this.oauth2 = new OAuth2Configuration({
+      clientId: env.PIPEDRIVE_CLIENT_ID,
+      clientSecret: env.PIPEDRIVE_CLIENT_SECRET,
+      redirectUri: env.PIPEDRIVE_REDIRECT_URL,
+    });
+    this.oauth2V2 = new OAuth2ConfigurationV2({
       clientId: env.PIPEDRIVE_CLIENT_ID,
       clientSecret: env.PIPEDRIVE_CLIENT_SECRET,
       redirectUri: env.PIPEDRIVE_REDIRECT_URL,
@@ -679,8 +687,9 @@ export class PipedriveController {
 
   async authorize(code: string) {
     const res = await this.oauth2.authorize(code);
+    const resV2 = await this.oauth2V2.authorize(code);
 
-    const [configErr, _] = await this.updateConfig(res);
+    const [configErr, _] = await this.updateConfig(res, resV2);
     if (configErr) {
       logError(this.logger, configErr, { context: "authorize" });
       return [configErr, null] as const;
@@ -836,10 +845,12 @@ export class PipedriveController {
     return [null, true] as const;
   }
 
-  private async updateConfig(tokens?: TokenResponse) {
-    if (tokens) {
+  private async updateConfig(tokens?: TokenResponse, tokensV2?: TokenResponse) {
+    if (tokens && tokensV2) {
       this.tokens = { ...tokens };
+      this.tokensV2 = { ...tokensV2 };
       this.oauth2.updateToken(tokens);
+      this.oauth2V2.updateToken(tokensV2);
     } else {
       const [err, _] = await this.setTokenFromDB();
 
@@ -849,10 +860,13 @@ export class PipedriveController {
       }
 
       this.oauth2.updateToken(this.tokens);
+      this.oauth2V2.updateToken(this.tokens);
 
       const newToken = await this.oauth2.tokenRefresh();
+      const newTokenV2 = await this.oauth2V2.tokenRefresh();
 
       this.tokens = newToken;
+      this.tokensV2 = newTokenV2;
     }
 
     if (!this.tokens) {
@@ -875,9 +889,12 @@ export class PipedriveController {
       basePath,
     });
 
+    const accessTokenV2 = this.oauth2V2.getAccessToken;
+    const basePathV2 = this.oauth2V2.basePath;
+
     this.configV2 = new ConfigurationV2({
-      accessToken,
-      basePath,
+      accessToken: accessTokenV2,
+      basePath: basePathV2,
     });
 
     return [null, true] as const;
