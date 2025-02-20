@@ -4,7 +4,6 @@ import dayjs from "dayjs";
 import {
   createLogger,
   logAPICall,
-  logElapsedTime,
   logError,
 } from "@/utils/logger";
 
@@ -37,6 +36,7 @@ export class CalendlyClient {
       params?: Record<string, string>;
       requiresAuth?: boolean;
       isAuthEndpoint?: boolean;
+      skipTokenRefresh?: boolean;
     },
   ): Promise<readonly [CalIntError, null] | readonly [null, T]> {
     const {
@@ -45,10 +45,11 @@ export class CalendlyClient {
       params,
       requiresAuth = true,
       isAuthEndpoint = false,
+      skipTokenRefresh = false,
     } = options;
 
     try {
-      if (requiresAuth && !isAuthEndpoint) {
+      if (requiresAuth && !isAuthEndpoint && !skipTokenRefresh) {
         const [refreshErr] = await this.refreshAccessToken();
         if (refreshErr) {
           return [
@@ -268,6 +269,8 @@ export class CalendlyClient {
   async getUserInfo() {
     return await this.makeRequest<CalendlyGetUserMeRes>("/users/me", {
       method: "GET",
+      requiresAuth: true,
+      skipTokenRefresh: true,
     });
   }
 
