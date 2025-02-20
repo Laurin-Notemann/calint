@@ -587,7 +587,11 @@ export class PipedriveController {
           deal_id: deal.pipedriveId,
           owner_id: user.id,
           org_id: company.pipedriveId,
-          person_id: person.pipedriveId,
+          //person_id: person.pipedriveId,
+          participants: [{
+            person_id: person.pipedriveId,
+            primary: true
+          }]
         },
       };
 
