@@ -87,6 +87,7 @@ export class PipedriveController {
       const res = await api.updateActivity({
         id: dbActivityGet.pipedriveId,
         AddActivityRequest: {
+          subject: dbActivityTypeGet.name,
           type: dbActivityTypeGet.keyString,
           done: true,
         },
