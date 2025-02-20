@@ -581,7 +581,9 @@ export class PipedriveController {
       const formattedDueDate = startTime.format('YYYY-MM-DD');
       const formattedDueTime = startTime.format('HH:mm');
 
-      const durationInSeconds = endTime.diff(startTime, "second");
+      const durationHours = endTime.diff(startTime, 'hour');
+      const durationMinutes = endTime.diff(startTime, 'minute') % 60;
+      const formattedDuration = `${durationHours.toString().padStart(2, '0')}:${durationMinutes.toString().padStart(2, '0')}`;
 
       const [errPerson, person] = await this.querier.getPipedrivePersonById(
         deal.pipedrivePeopleId,
@@ -594,7 +596,7 @@ export class PipedriveController {
           type: activityType.keyString,
           due_date: formattedDueDate,
           due_time: formattedDueTime,
-          //duration: durationInSeconds.toString(),
+          duration: formattedDuration,
           deal_id: deal.pipedriveId,
           owner_id: user.id,
           //person_id: person.pipedriveId,
@@ -604,10 +606,6 @@ export class PipedriveController {
           }]
         },
       };
-
-
-      this.logger.warn('Due Date being sent to API: ' + formattedDueDate);
-      this.logger.warn('Due Time being sent to API: ' + formattedDueTime);
 
       const res = await api.addActivity(body);
 
