@@ -997,7 +997,7 @@ export class DatabaseQueries {
         const updatedUser = await db
           .update(calendlyAccs)
           .set(formattedCreds)
-          .where(eq(calendlyAccs.uri, calendlyUri));
+          .where(eq(calendlyAccs.uri, calendlyUri)).returning();
 
         dbLogger.warn("user: " + JSON.stringify(updatedUser))
 
