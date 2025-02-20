@@ -124,9 +124,11 @@ export class DatabaseQueries {
           .from(pipedriveActivities)
           .where(eq(pipedriveActivities.calendlyEventId, eventId));
 
-        if (activity.length !== 1) {
+        if (activity.length === 0) {
           throw new Error(ERROR_MESSAGES.PIPEDRIVE_ACTIVITY_NOT_FOUND);
-        }
+        } else if (activity.length > 1)
+          throw new Error(ERROR_MESSAGES.PIPEDRIVE_ACTIVITY_TOO_MANY_FOUND);
+
 
         return activity[0];
       },
@@ -379,7 +381,9 @@ export class DatabaseQueries {
           .from(calendlyEvents)
           .where(eq(calendlyEvents.uri, uri));
 
-        if (event.length !== 1) {
+        if (event.length === 0) {
+          throw new Error(ERROR_MESSAGES.CALENDLY_EVENT_NOT_FOUND);
+        } else if (event.length > 1) {
           throw new Error(ERROR_MESSAGES.CALENDLY_EVENT_NOT_FOUND);
         }
 

@@ -22,8 +22,6 @@ import {
   NewPipedriveActivityType,
   NewPipedriveDeal,
   NewPipedrivePerson,
-  PipedriveActivity,
-  PipedriveActivityType,
   PipedriveDeal,
   PipedrivePerson,
   TypeMappingType,
@@ -182,7 +180,7 @@ export class PipedriveController {
       try {
         const res = await api.getDeals({
           person_id: person.pipedriveId,
-          limit: 1, // We only need one deal
+          limit: 15, // We only need one deal
           sort_by: "add_time", // Get the most recently added deal
           sort_direction: "desc",
         });
@@ -200,6 +198,8 @@ export class PipedriveController {
             null,
           ] as const;
         }
+
+        this.logger.warn("GetDeal: " + JSON.stringify(res.data))
 
         const dealData = res.data[0];
 
@@ -545,67 +545,73 @@ export class PipedriveController {
       ] as const;
     }
 
-    const [errCompany, company] = await this.querier.getCompany(deal.companyId);
-    if (errCompany) return [errCompany, null] as const;
+    const [errActivityGet, dbActivityGet] = await this.querier.getPipedriveActivityByEventId(event.id)
+    if (errActivityGet && errActivityGet.error.toString().includes(ERROR_MESSAGES.PIPEDRIVE_ACTIVITY_NOT_FOUND)) {
+      const [errCompany, company] = await this.querier.getCompanyById(deal.companyId);
+      if (errCompany) return [errCompany, null] as const;
 
-    const [errActivityType, activityType] =
-      await this.querier.getPipedriveActivityTypeById(
-        mapping.pipedriveActivityTypeId,
+      const [errActivityType, activityType] =
+        await this.querier.getPipedriveActivityTypeById(
+          mapping.pipedriveActivityTypeId,
+        );
+      if (errActivityType) return [errActivityType, null] as const;
+
+      const api = new ActivitiesApi(this.config);
+
+      const startTime = dayjs(eventPayload.scheduled_event.start_time);
+      const endTime = dayjs(eventPayload.scheduled_event.end_time);
+
+      const durationInSeconds = endTime.diff(startTime, "second");
+
+      const [errPerson, person] = await this.querier.getPipedrivePersonById(
+        deal.pipedrivePeopleId,
       );
-    if (errActivityType) return [errActivityType, null] as const;
+      if (errPerson) return [errPerson, null] as const;
 
-    const api = new ActivitiesApi(this.config);
-
-    const startTime = dayjs(eventPayload.scheduled_event.start_time);
-    const endTime = dayjs(eventPayload.scheduled_event.end_time);
-
-    const durationInSeconds = endTime.diff(startTime, "second");
-
-    const [errPerson, person] = await this.querier.getPipedrivePersonById(
-      deal.pipedrivePeopleId,
-    );
-    if (errPerson) return [errPerson, null] as const;
-
-    const body: ActivitiesApiAddActivityRequest = {
-      AddActivityRequest: {
-        subject: activityType.name,
-        type: activityType.name,
-        due_date: eventPayload.scheduled_event.start_time,
-        duration: durationInSeconds.toString(),
-        deal_id: deal.pipedriveId,
-        owner_id: user.id,
-        org_id: company.pipedriveId,
-        person_id: person.pipedriveId,
-      },
-    };
-
-    const res = await api.addActivity(body);
-
-    if (!res.success || !res.data) {
-      const err = new Error("Api call addActivity failed.");
-      logError(this.logger, err, { context: "createAndSaveActivity" });
-      return [
-        {
-          message: "" + err,
-          error: err,
+      const body: ActivitiesApiAddActivityRequest = {
+        AddActivityRequest: {
+          subject: activityType.name,
+          type: activityType.name,
+          due_date: eventPayload.scheduled_event.start_time,
+          duration: durationInSeconds.toString(),
+          deal_id: deal.pipedriveId,
+          owner_id: user.id,
+          org_id: company.pipedriveId,
+          person_id: person.pipedriveId,
         },
-        null,
-      ] as const;
+      };
+
+      const res = await api.addActivity(body);
+
+      if (!res.success || !res.data) {
+        const err = new Error("Api call addActivity failed.");
+        logError(this.logger, err, { context: "createAndSaveActivity" });
+        return [
+          {
+            message: "" + err,
+            error: err,
+          },
+          null,
+        ] as const;
+      }
+
+      const dbNewActivity: NewPipedriveActivity = {
+        name: res.data.subject!,
+        pipedriveId: res.data.id!,
+        pipedriveDealId: deal.id,
+        calendlyEventId: event.id,
+        activityTypeId: mapping.pipedriveActivityTypeId,
+      };
+
+      const [errCreateActivity, createdActivity] =
+        await this.querier.createPipedriveActivity(dbNewActivity);
+      if (errCreateActivity) return [errCreateActivity, null] as const;
+
+      return [null, createdActivity] as const;
+    } else if (errActivityGet) {
+      return [errActivityGet, null] as const;
     }
-
-    const dbNewActivity: NewPipedriveActivity = {
-      name: res.data.subject!,
-      pipedriveId: res.data.id!,
-      pipedriveDealId: deal.id,
-      calendlyEventId: event.id,
-      activityTypeId: mapping.pipedriveActivityTypeId,
-    };
-
-    const [errCreateActivity, createdActivity] =
-      await this.querier.createPipedriveActivity(dbNewActivity);
-    if (errCreateActivity) return [errCreateActivity, null] as const;
-
-    return [null, createdActivity] as const;
+    return [null, dbActivityGet] as const
   }
 
   async getAndSaveActiviyTypes(userId: number, companyId: string) {

@@ -16,8 +16,9 @@ export const ERROR_MESSAGES = {
   MISSING_REQUIRED_FIELDS: "Missing required fields.",
   TYPE_MAPPING_CREATION_FAILED: "Failed to create type mapping.",
   TYPE_MAPPING_UPDATE_FAILED: "Failed to update type mapping.",
-  CALENDLY_EVENT_UPDATE_FAILED: "Calendly Event not found.",
-  CALENDLY_EVENT_NOT_FOUND: "Failed to update calendly event.",
+  CALENDLY_EVENT_UPDATE_FAILED: "Failed to update calendly event.",
+  CALENDLY_EVENT_NOT_FOUND: "Calendly Event not found.",
+  CALENDLY_EVENT_TOO_MANY_FOUND: "Too many calendly events found.",
   PIPEDRIVE_ACTIVITY_UPDATE_FAILED: "Failed to update pipedrive activity.",
   PIPEDRIVE_ACTIVITY_CREATION_FAILED: "Failed to pipedrive activity in DB.",
   CALENDLY_EVENT_CREATION_FAILED: "Failed to calendly event in DB.",
@@ -27,4 +28,5 @@ export const ERROR_MESSAGES = {
   PIPEDRIVE_DEAL_NOT_FOUND: "Pipedrive deal not found.",
   PIPEDRIVE_ACTIVITY_TYPE_NOT_FOUND: "Pipedrive activity type not found.",
   PIPEDRIVE_ACTIVITY_NOT_FOUND: "Pipedrive activity not found.",
+  PIPEDRIVE_ACTIVITY_TOO_MANY_FOUND: "Too many pipdrive activities found.",
 };

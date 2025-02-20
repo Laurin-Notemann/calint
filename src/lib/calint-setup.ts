@@ -12,6 +12,7 @@ import {
 } from "@/db/schema";
 import { InviteePayload, WebhookPayload } from "./calendly-client";
 import { BaseUser } from "pipedrive/v1";
+import { ERROR_MESSAGES } from "./constants";
 
 export type SettingsDataRes = {
   data: {
@@ -166,9 +167,28 @@ export class CalintSetup {
       uri: payload.uri,
       status: mapping.type,
     };
-    const [errEventDb, dbEvent] =
-      await this.querier.createCalendlyEvent(newEvent);
-    if (errEventDb) return [errEventDb, null] as const;
+
+    const [errEventGet, dbEventGet] = await this.querier.getEventByUri(newEvent.uri)
+    if (errEventGet && errEventGet.error.toString().includes(ERROR_MESSAGES.CALENDLY_EVENT_NOT_FOUND)) {
+      const [errEventDb, dbEvent] =
+        await this.querier.createCalendlyEvent(newEvent);
+      if (errEventDb) return [errEventDb, null] as const;
+
+      const [errActivityPipedrive, pipedriveActivity] =
+        await this.pipedriveController.createAndSaveActivity(
+          deal,
+          payload,
+          mapping,
+          user,
+          dbEvent,
+        );
+      if (errActivityPipedrive) return [errActivityPipedrive, null] as const;
+
+      return [null, pipedriveActivity] as const;
+    } else if (errEventGet || !dbEventGet) {
+      return [errEventGet, null] as const
+    }
+
 
     const [errActivityPipedrive, pipedriveActivity] =
       await this.pipedriveController.createAndSaveActivity(
@@ -176,7 +196,7 @@ export class CalintSetup {
         payload,
         mapping,
         user,
-        dbEvent,
+        dbEventGet,
       );
 
     if (errActivityPipedrive) return [errActivityPipedrive, null] as const;
