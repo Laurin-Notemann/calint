@@ -6,7 +6,6 @@ import {
   withLogging,
   CalIntError,
   PromiseReturn,
-  logMessage,
 } from "@/utils/logger";
 
 export class CalendlyClient {
@@ -109,7 +108,16 @@ export class CalendlyClient {
     };
 
     if (skipLogging) {
-      return makeRequestLogic();
+      return makeRequestLogic().then(
+        data => Promise.resolve([null, data] as const) as PromiseReturn<T>,
+        error => Promise.resolve([
+          error instanceof CalIntError ? error : new CalIntError(
+            error instanceof Error ? error.message : String(error),
+            "UNEXPECTED_ERROR"
+          ),
+          null
+        ] as const) as PromiseReturn<T>
+      );
     } else {
       return withLogging(
         this.logger,
@@ -149,7 +157,7 @@ export class CalendlyClient {
         }
 
 
-        const res = await this.makeRequest<GetAccessTokenRes>(
+        const [err, data] = await this.makeRequest<GetAccessTokenRes>(
           "/oauth/token",
           {
             method: "POST",
@@ -161,10 +169,6 @@ export class CalendlyClient {
             skipLogging: true,
           },
         );
-
-        logMessage(this.logger, 'info', JSON.stringify(res))
-
-        const [err, data] = res
         if (err) throw err;
 
         const expirationDate = dayjs().add(data.expires_in, "second").toDate();
