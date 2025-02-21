@@ -779,8 +779,11 @@ export class PipedriveController {
   }
 
   async authorize(code: string) {
+    this.logger.warn("test")
     const res = await this.oauth2.authorize(code);
+    this.logger.warn("test2")
     const resV2 = await this.oauth2V2.authorize(code);
+    this.logger.warn("test3")
 
     const [configErr, _] = await this.updateConfig(res, resV2);
     if (configErr) {

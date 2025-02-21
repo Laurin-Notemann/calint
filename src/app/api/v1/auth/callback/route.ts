@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     if (err) {
       logError(logger, err, { context: "pipedriveCallback" });
       const errorUrl = new URL("/error", request.url);
-      errorUrl.searchParams.set("error-msg", err.message);
+      errorUrl.searchParams.set("error-msg", JSON.stringify(err.message));
       return NextResponse.redirect(errorUrl);
     }
 
