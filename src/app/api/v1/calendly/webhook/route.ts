@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
 
   if (err) {
     logError(logger, err, { context: "/webhook post route" });
-    return NextResponse.json({ error: err.message }, { status: 400 });
+    return NextResponse.json({ error: err.message }, { status: 200 });
   }
 
   //return NextResponse.json(res);
