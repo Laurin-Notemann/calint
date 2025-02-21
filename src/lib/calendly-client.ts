@@ -202,6 +202,9 @@ export class CalendlyClient {
   }
 
   async getOrganizationMemberships(): PromiseReturn<GetOrganizationMembershipResponse> {
+    const [err] = await this.refreshAccessToken();
+    if (err) return [err, null] as const;
+
     return this.makeRequest<GetOrganizationMembershipResponse>(
       "/organization_memberships",
       {
@@ -215,6 +218,8 @@ export class CalendlyClient {
   }
 
   async getAllEventTypes(): PromiseReturn<GetEventTypesResponse> {
+    const [err] = await this.refreshAccessToken();
+    if (err) return [err, null] as const;
     return this.makeRequest<GetEventTypesResponse>("/event_types", {
       method: "GET",
       params: {
