@@ -42,7 +42,7 @@ export type PromiseReturn<T> = Promise<
 >;
 
 export class DatabaseQueries {
-  constructor() {}
+  constructor() { }
 
   private createError = (
     message: string,
@@ -1015,7 +1015,7 @@ export class DatabaseQueries {
 
         const [err, user] = await this.getUser(userId);
 
-        if (err) throw err;
+        if (err) throw err.error;
 
         return user;
       },
@@ -1027,7 +1027,8 @@ export class DatabaseQueries {
   async loginWithCalendly(
     calendlyUri: string,
     creds: AccountLogin,
-  ): PromiseReturn<boolean> {
+    userId: number,
+  ): PromiseReturn<User> {
     return this.withErrorHandling(
       async () => {
         const formattedCreds = {
@@ -1043,9 +1044,11 @@ export class DatabaseQueries {
           .update(calendlyAccs)
           .set(formattedCreds)
           .where(eq(calendlyAccs.uri, calendlyUri))
-          .returning();
 
-        return true;
+        const [err, user] = await this.getUser(userId);
+        if (err) throw err.error;
+
+        return user;
       },
       "loginWithCalendly",
       { calendlyUri },

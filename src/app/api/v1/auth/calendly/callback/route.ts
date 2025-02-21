@@ -73,19 +73,23 @@ export async function GET(request: NextRequest) {
         return NextResponse.redirect(new URL("/error", request.url));
       }
 
+      const userId = pipedriveUser[0].id;
+
       //if there is no calendly acc create a new one
       if (calendlyAcc.length > 0) {
-        const [err, _] = await querier.loginWithCalendly(
+        const [err, dbUser] = await querier.loginWithCalendly(
           calendlyAcc[0].calendly_accs.uri,
           credentials,
+          userId
         );
         if (err) {
           logError(logger, err, { context: "Failed to login with Calendly" });
           return NextResponse.redirect(new URL("/error", request.url));
         }
+        dbUserGl = dbUser;
       } else {
         const [addAccErr, dbUser] = await querier.addCalendlyAccountToUser(
-          pipedriveUser[0].id,
+          userId,
           user.resource,
           credentials,
         );
