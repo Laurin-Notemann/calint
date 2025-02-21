@@ -59,13 +59,18 @@ export class CalendlyClient {
         if (refreshErr) throw refreshErr
       }
 
+      logMessage(this.logger, "info", 'Test1')
+
       const baseUrl = isAuthEndpoint ? this.authUrl : this.baseUrl;
+      logMessage(this.logger, "info", 'Test2')
       const url = new URL(endpoint, baseUrl);
       if (params) {
         Object.entries(params).forEach(([key, value]) => {
           url.searchParams.append(key, value);
         });
       }
+
+      logMessage(this.logger, "info", 'Test3')
 
       const headers: Record<string, string> = {
         "Content-Type": isAuthEndpoint
@@ -83,6 +88,8 @@ export class CalendlyClient {
         }
       }
 
+      logMessage(this.logger, "info", 'Test4')
+
       const res = await fetch(url.toString(), {
         method,
         headers,
@@ -94,6 +101,8 @@ export class CalendlyClient {
             : JSON.stringify(body),
         }),
       });
+
+      logMessage(this.logger, "info", 'Test5')
 
       const data = await res.json();
 
@@ -149,8 +158,6 @@ export class CalendlyClient {
           return null;
         }
 
-        logMessage(this.logger, 'info', 'Test1')
-
         const [err, data] = await this.makeRequest<GetAccessTokenRes>(
           "/oauth/token",
           {
@@ -165,16 +172,12 @@ export class CalendlyClient {
         );
         if (err) throw err;
 
-        logMessage(this.logger, 'info', 'Test2')
-
         const expirationDate = dayjs().add(data.expires_in, "second").toDate();
         const credentials = {
           accessToken: data.access_token,
           refreshToken: data.refresh_token,
           expiresAt: expirationDate,
         };
-
-        logMessage(this.logger, 'info', 'Test3')
 
         const [dbErr] = await querier.loginWithCalendly(
           data.owner,
