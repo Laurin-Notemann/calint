@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createLogger, logError } from "@/utils/logger";
+import { createLogger, logMessage } from "@/utils/logger";
 import { WebhookPayload } from "@/lib/calendly-client";
 import { PipedriveController } from "@/lib/pipedrive/pipedrive-controller";
 import { CalendlyController } from "@/lib/calendly/calendly-controller";
@@ -20,11 +20,11 @@ export async function POST(request: NextRequest) {
     querier,
   );
 
-  const [err, res] = await calintSetup.handleCalendlyWebhook(body);
+  const [err, _] = await calintSetup.handleCalendlyWebhook(body);
 
   if (err) {
-    logError(logger, err, { context: "/webhook post route" });
-    return NextResponse.json({ error: err.message }, { status: 200 });
+    logMessage(logger, "error", err.message);
+    return NextResponse.json({ error: err.message }, { status: 202 });
   }
 
   //return NextResponse.json(res);

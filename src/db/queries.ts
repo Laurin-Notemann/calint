@@ -28,52 +28,25 @@ import {
   UserCalendly,
   users,
 } from "./schema";
-import { logDBError, logDBOperation } from "@/utils/db-logger";
 import {
   Activity,
   GetCurrentUserResponseAllOfData,
   TokenResponse,
 } from "pipedrive/v1";
 
-import { ERROR_MESSAGES } from "@/lib/constants";
-
-export type PromiseReturn<T> = Promise<
-  Readonly<[CalIntError, null] | [null, T]>
->;
+import { Logger } from "pino";
+import createLogger, {
+  withLogging,
+  CalIntError,
+  ERROR_MESSAGES,
+  PromiseReturn,
+} from "@/utils/logger";
 
 export class DatabaseQueries {
-  constructor() { }
+  private logger: Logger;
 
-  private createError = (
-    message: string,
-    error: any,
-    context?: any,
-  ): CalIntError => {
-    logDBError(message, error, context);
-    return {
-      message,
-      error,
-    };
-  };
-
-  private async withErrorHandling<T>(
-    operation: DatabaseOperation<T>,
-    operationName: string,
-    ...args: any[]
-  ): PromiseReturn<T> {
-    try {
-      logDBOperation(operationName, ...args);
-      const result = await operation(...args);
-      return [null, result] as const;
-    } catch (error) {
-      return [
-        this.createError(ERROR_MESSAGES.DB_OPERATION_ERROR, error, {
-          operation: operationName,
-          ...args,
-        }),
-        null,
-      ] as const;
-    }
+  constructor() {
+    this.logger = createLogger("DatabaseQueries");
   }
 
   async getCalendlyEventsAndPipeDriveActivitiesByPipedriveActivities(
@@ -83,7 +56,8 @@ export class DatabaseQueries {
   ): PromiseReturn<
     { calendlyEvent: CalendlyEvent; pipedriveActivity: PipedriveActivity }[]
   > {
-    return this.withErrorHandling(
+    return withLogging(
+      this.logger,
       () => {
         const activityIds = activities.map((activity) => activity.id);
 
@@ -110,6 +84,8 @@ export class DatabaseQueries {
           );
       },
       "getCalendlyEventsByPipedriveActivities",
+      "db",
+      undefined,
       { activities, companyId, dealId },
     );
   }
@@ -117,7 +93,8 @@ export class DatabaseQueries {
   async updateCalendlyEvent(
     event: CalendlyEvent,
   ): PromiseReturn<CalendlyEvent> {
-    return this.withErrorHandling(
+    return withLogging(
+      this.logger,
       async () => {
         const updatedEvent = await db
           .update(calendlyEvents)
@@ -126,12 +103,17 @@ export class DatabaseQueries {
           .returning();
 
         if (updatedEvent.length === 0) {
-          throw new Error(ERROR_MESSAGES.CALENDLY_EVENT_UPDATE_FAILED);
+          throw new CalIntError(
+            ERROR_MESSAGES.CALENDLY_EVENT_UPDATE_FAILED,
+            "CALENDLY_EVENT_UPDATE_FAILED",
+          );
         }
 
         return updatedEvent[0];
       },
       "updateCalendlyEvent",
+      "db",
+      undefined,
       { event },
     );
   }
@@ -139,7 +121,8 @@ export class DatabaseQueries {
   async updatePipedriveActivity(
     activity: PipedriveActivity,
   ): PromiseReturn<PipedriveActivity> {
-    return this.withErrorHandling(
+    return withLogging(
+      this.logger,
       async () => {
         const updatedActivity = await db
           .update(pipedriveActivities)
@@ -148,18 +131,24 @@ export class DatabaseQueries {
           .returning();
 
         if (updatedActivity.length === 0) {
-          throw new Error(ERROR_MESSAGES.PIPEDRIVE_ACTIVITY_UPDATE_FAILED);
+          throw new CalIntError(
+            ERROR_MESSAGES.PIPEDRIVE_ACTIVITY_UPDATE_FAILED,
+            "PIPEDRIVE_ACTIVITY_UPDATE_FAILED",
+          );
         }
 
         return updatedActivity[0];
       },
       "updatePipedriveActivity",
+      "db",
+      undefined,
       { activity },
     );
   }
 
   async getPipedriveActivityByEventId(eventId: string) {
-    return this.withErrorHandling(
+    return withLogging(
+      this.logger,
       async () => {
         const activity = await db
           .select()
@@ -167,19 +156,29 @@ export class DatabaseQueries {
           .where(eq(pipedriveActivities.calendlyEventId, eventId));
 
         if (activity.length === 0) {
-          throw new Error(ERROR_MESSAGES.PIPEDRIVE_ACTIVITY_NOT_FOUND);
-        } else if (activity.length > 1)
-          throw new Error(ERROR_MESSAGES.PIPEDRIVE_ACTIVITY_TOO_MANY_FOUND);
+          throw new CalIntError(
+            ERROR_MESSAGES.PIPEDRIVE_ACTIVITY_NOT_FOUND,
+            "PIPEDRIVE_ACTIVITY_NOT_FOUND",
+          );
+        } else if (activity.length > 1) {
+          throw new CalIntError(
+            ERROR_MESSAGES.PIPEDRIVE_ACTIVITY_TOO_MANY_FOUND,
+            "PIPEDRIVE_ACTIVITY_TOO_MANY_FOUND",
+          );
+        }
 
         return activity[0];
       },
       "getPipedriveActivityById",
+      "db",
+      undefined,
       { eventId },
     );
   }
 
   async getPipedriveActivityById(id: string) {
-    return this.withErrorHandling(
+    return withLogging(
+      this.logger,
       async () => {
         const activity = await db
           .select()
@@ -187,18 +186,24 @@ export class DatabaseQueries {
           .where(eq(pipedriveActivities.id, id));
 
         if (activity.length !== 1) {
-          throw new Error(ERROR_MESSAGES.PIPEDRIVE_ACTIVITY_NOT_FOUND);
+          throw new CalIntError(
+            ERROR_MESSAGES.PIPEDRIVE_ACTIVITY_NOT_FOUND,
+            "PIPEDRIVE_ACTIVITY_NOT_FOUND",
+          );
         }
 
         return activity[0];
       },
       "getPipedriveActivityById",
+      "db",
+      undefined,
       { id },
     );
   }
 
   async getPipedriveActivityTypeById(id: string) {
-    return this.withErrorHandling(
+    return withLogging(
+      this.logger,
       async () => {
         const activityType = await db
           .select()
@@ -206,18 +211,24 @@ export class DatabaseQueries {
           .where(eq(pipedriveActivityTypes.id, id));
 
         if (activityType.length !== 1) {
-          throw new Error(ERROR_MESSAGES.PIPEDRIVE_ACTIVITY_TYPE_NOT_FOUND);
+          throw new CalIntError(
+            ERROR_MESSAGES.PIPEDRIVE_ACTIVITY_TYPE_NOT_FOUND,
+            "PIPEDRIVE_ACTIVITY_TYPE_NOT_FOUND",
+          );
         }
 
         return activityType[0];
       },
       "getPipedriveActivityTypeById",
+      "db",
+      undefined,
       { id },
     );
   }
 
   async getPipedriveDealByPersonId(companyId: string, personId: string) {
-    return this.withErrorHandling(
+    return withLogging(
+      this.logger,
       async () => {
         const deal = await db
           .select()
@@ -229,19 +240,31 @@ export class DatabaseQueries {
             ),
           );
 
-        if (deal.length !== 1) {
-          throw new Error(ERROR_MESSAGES.PIPEDRIVE_DEAL_NOT_FOUND);
+        if (deal.length === 0) {
+          throw new CalIntError(
+            ERROR_MESSAGES.PIPEDRIVE_DEAL_NOT_FOUND,
+            "PIPEDRIVE_DEAL_NOT_FOUND",
+            true,
+          );
+        } else if (deal.length > 1) {
+          throw new CalIntError(
+            ERROR_MESSAGES.PIPEDRIVE_ACTIVITY_TOO_MANY_FOUND,
+            "PIPEDRIVE_ACTIVITY_TOO_MANY_FOUND",
+          );
         }
 
         return deal[0];
       },
       "getPipedriveDealByDealId",
+      "db",
+      undefined,
       { companyId, personId },
     );
   }
 
   async getPipedriveDealByDealId(companyId: string, dealId: number) {
-    return this.withErrorHandling(
+    return withLogging(
+      this.logger,
       async () => {
         const deal = await db
           .select()
@@ -253,19 +276,31 @@ export class DatabaseQueries {
             ),
           );
 
-        if (deal.length !== 1) {
-          throw new Error(ERROR_MESSAGES.PIPEDRIVE_DEAL_NOT_FOUND);
+        if (deal.length === 0) {
+          throw new CalIntError(
+            ERROR_MESSAGES.PIPEDRIVE_DEAL_NOT_FOUND,
+            "PIPEDRIVE_DEAL_NOT_FOUND",
+            true,
+          );
+        } else if (deal.length > 1) {
+          throw new CalIntError(
+            ERROR_MESSAGES.PIPEDRIVE_ACTIVITY_TOO_MANY_FOUND,
+            "PIPEDRIVE_ACTIVITY_TOO_MANY_FOUND",
+          );
         }
 
         return deal[0];
       },
       "getPipedriveDealByDealId",
+      "db",
+      undefined,
       { companyId, dealId },
     );
   }
 
   async getPipedrivePersonById(id: string) {
-    return this.withErrorHandling(
+    return withLogging(
+      this.logger,
       async () => {
         const person = await db
           .select()
@@ -273,12 +308,17 @@ export class DatabaseQueries {
           .where(eq(pipedrivePeople.id, id));
 
         if (person.length !== 1) {
-          throw new Error(ERROR_MESSAGES.PIPEDRIVE_PERSON_NOT_FOUND);
+          throw new CalIntError(
+            ERROR_MESSAGES.PIPEDRIVE_PERSON_NOT_FOUND,
+            "PIPEDRIVE_PERSON_NOT_FOUND",
+          );
         }
 
         return person[0];
       },
       "getPipedrivePersonById",
+      "db",
+      undefined,
       { id },
     );
   }
@@ -287,7 +327,8 @@ export class DatabaseQueries {
     companyId: string,
     pipedriveId: number,
   ) {
-    return this.withErrorHandling(
+    return withLogging(
+      this.logger,
       async () => {
         const person = await db
           .select()
@@ -299,19 +340,31 @@ export class DatabaseQueries {
             ),
           );
 
-        if (person.length !== 1) {
-          throw new Error(ERROR_MESSAGES.PIPEDRIVE_PERSON_NOT_FOUND);
+        if (person.length === 0) {
+          throw new CalIntError(
+            ERROR_MESSAGES.PIPEDRIVE_PERSON_NOT_FOUND,
+            "PIPEDRIVE_PERSON_NOT_FOUND",
+            true,
+          );
+        } else if (person.length !== 1) {
+          throw new CalIntError(
+            ERROR_MESSAGES.PIPEDRIVE_PERSON_TOO_MANY_FOUND,
+            "PIPEDRIVE_PERSON_TOO_MANY_FOUND",
+          );
         }
 
         return person[0];
       },
       "getPipedrivePersonByPipedriveId",
+      "db",
+      undefined,
       { companyId, pipedriveId },
     );
   }
 
   async getPipedrivePersonByEmail(companyId: string, email: string) {
-    return this.withErrorHandling(
+    return withLogging(
+      this.logger,
       async () => {
         const person = await db
           .select()
@@ -323,19 +376,31 @@ export class DatabaseQueries {
             ),
           );
 
-        if (person.length !== 1) {
-          throw new Error(ERROR_MESSAGES.PIPEDRIVE_PERSON_NOT_FOUND);
+        if (person.length === 0) {
+          throw new CalIntError(
+            ERROR_MESSAGES.PIPEDRIVE_PERSON_NOT_FOUND,
+            "PIPEDRIVE_PERSON_NOT_FOUND",
+            true,
+          );
+        } else if (person.length !== 1) {
+          throw new CalIntError(
+            ERROR_MESSAGES.PIPEDRIVE_PERSON_TOO_MANY_FOUND,
+            "PIPEDRIVE_PERSON_TOO_MANY_FOUND",
+          );
         }
 
         return person[0];
       },
       "getPipedrivePersonByEmail",
+      "db",
+      undefined,
       { companyId, email },
     );
   }
 
   async createPipedriveDeal(newDeal: NewPipedriveDeal) {
-    return this.withErrorHandling(
+    return withLogging(
+      this.logger,
       async () => {
         const deal = await db
           .insert(pipedriveDeals)
@@ -343,18 +408,24 @@ export class DatabaseQueries {
           .returning();
 
         if (deal.length !== 1) {
-          throw new Error(ERROR_MESSAGES.PIPEDRIVE_DEAL_CREATION_FAILED);
+          throw new CalIntError(
+            ERROR_MESSAGES.PIPEDRIVE_DEAL_CREATION_FAILED,
+            "PIPEDRIVE_DEAL_CREATION_FAILED",
+          );
         }
 
         return deal[0];
       },
       "createPipedriveDeal",
+      "db",
+      undefined,
       { newDeal },
     );
   }
 
   async createPipedrivePerson(newPerson: NewPipedrivePerson) {
-    return this.withErrorHandling(
+    return withLogging(
+      this.logger,
       async () => {
         const person = await db
           .insert(pipedrivePeople)
@@ -362,12 +433,17 @@ export class DatabaseQueries {
           .returning();
 
         if (person.length !== 1) {
-          throw new Error(ERROR_MESSAGES.PIPEDRIVE_PERSON_CREATION_FAILED);
+          throw new CalIntError(
+            ERROR_MESSAGES.PIPEDRIVE_PERSON_CREATION_FAILED,
+            "PIPEDRIVE_PERSON_CREATION_FAILED",
+          );
         }
 
         return person[0];
       },
       "createPipedrivePerson",
+      "db",
+      undefined,
       { newPerson },
     );
   }
@@ -375,7 +451,8 @@ export class DatabaseQueries {
   async createCalendlyEvent(
     newEvent: NewCalendlyEvent,
   ): PromiseReturn<CalendlyEvent> {
-    return this.withErrorHandling(
+    return withLogging(
+      this.logger,
       async () => {
         const calendlyEvent = await db
           .insert(calendlyEvents)
@@ -383,12 +460,17 @@ export class DatabaseQueries {
           .returning();
 
         if (calendlyEvent.length !== 1) {
-          throw new Error(ERROR_MESSAGES.CALENDLY_EVENT_CREATION_FAILED);
+          throw new CalIntError(
+            ERROR_MESSAGES.CALENDLY_EVENT_CREATION_FAILED,
+            "CALENDLY_EVENT_CREATION_FAILED",
+          );
         }
 
         return calendlyEvent[0];
       },
       "createCalendlyEvent",
+      "db",
+      undefined,
       { newEvent },
     );
   }
@@ -396,7 +478,8 @@ export class DatabaseQueries {
   async createPipedriveActivity(
     newActivity: NewPipedriveActivity,
   ): PromiseReturn<PipedriveActivity> {
-    return this.withErrorHandling(
+    return withLogging(
+      this.logger,
       async () => {
         const activity = await db
           .insert(pipedriveActivities)
@@ -404,18 +487,24 @@ export class DatabaseQueries {
           .returning();
 
         if (activity.length !== 1) {
-          throw new Error(ERROR_MESSAGES.PIPEDRIVE_ACTIVITY_CREATION_FAILED);
+          throw new CalIntError(
+            ERROR_MESSAGES.PIPEDRIVE_ACTIVITY_CREATION_FAILED,
+            "PIPEDRIVE_ACTIVITY_CREATION_FAILED",
+          );
         }
 
         return activity[0];
       },
       "createPipedriveActivity",
+      "db",
+      undefined,
       { newActivity },
     );
   }
 
   async getEventByUri(uri: string): PromiseReturn<CalendlyEvent> {
-    return this.withErrorHandling(
+    return withLogging(
+      this.logger,
       async () => {
         const event = await db
           .select()
@@ -423,20 +512,30 @@ export class DatabaseQueries {
           .where(eq(calendlyEvents.uri, uri));
 
         if (event.length === 0) {
-          throw new Error(ERROR_MESSAGES.CALENDLY_EVENT_NOT_FOUND);
+          throw new CalIntError(
+            ERROR_MESSAGES.CALENDLY_EVENT_NOT_FOUND,
+            "CALENDLY_EVENT_NOT_FOUND",
+            true,
+          );
         } else if (event.length > 1) {
-          throw new Error(ERROR_MESSAGES.CALENDLY_EVENT_NOT_FOUND);
+          throw new CalIntError(
+            ERROR_MESSAGES.CALENDLY_EVENT_TOO_MANY_FOUND,
+            "CALENDLY_EVENT_TOO_MANY_FOUND",
+          );
         }
 
         return event[0];
       },
       "getEventByUri",
+      "db",
+      undefined,
       { uri },
     );
   }
 
   async getEventTypeByUri(uri: string): PromiseReturn<CalEventType> {
-    return this.withErrorHandling(
+    return withLogging(
+      this.logger,
       async () => {
         const eventType = await db
           .select()
@@ -444,12 +543,17 @@ export class DatabaseQueries {
           .where(eq(calEventTypes.uri, uri));
 
         if (eventType.length !== 1) {
-          throw new Error(ERROR_MESSAGES.EVENT_TYPE_NOT_FOUND);
+          throw new CalIntError(
+            ERROR_MESSAGES.EVENT_TYPE_NOT_FOUND,
+            "EVENT_TYPE_NOT_FOUND",
+          );
         }
 
         return eventType[0];
       },
       "getEventTypeByUri",
+      "db",
+      undefined,
       { uri },
     );
   }
@@ -457,7 +561,8 @@ export class DatabaseQueries {
   async getTypeMappingsByEventTypeId(
     calendlyEventTypeId: string,
   ): PromiseReturn<TypeMappingType[]> {
-    return this.withErrorHandling(
+    return withLogging(
+      this.logger,
       () => {
         return db
           .select()
@@ -470,6 +575,8 @@ export class DatabaseQueries {
           );
       },
       "getTypeMapping",
+      "db",
+      undefined,
       { calendlyEventTypeId },
     );
   }
@@ -479,7 +586,8 @@ export class DatabaseQueries {
     companyId: string,
     calendlyEventTypeId: string,
   ): PromiseReturn<TypeMappingType | null> {
-    return this.withErrorHandling(
+    return withLogging(
+      this.logger,
       async () => {
         const mapping = await db
           .select()
@@ -498,6 +606,8 @@ export class DatabaseQueries {
         return mapping.length > 0 ? mapping[0] : null;
       },
       "getTypeMapping",
+      "db",
+      undefined,
       { type, companyId, calendlyEventTypeId },
     );
   }
@@ -505,7 +615,8 @@ export class DatabaseQueries {
   async updateTypeMapping(
     typeMapping: NewTypeMappingType,
   ): PromiseReturn<TypeMappingType> {
-    return this.withErrorHandling(
+    return withLogging(
+      this.logger,
       async () => {
         const updatedMapping = await db
           .update(eventActivityTypesMapping)
@@ -523,12 +634,17 @@ export class DatabaseQueries {
           .returning();
 
         if (updatedMapping.length === 0) {
-          throw new Error(ERROR_MESSAGES.TYPE_MAPPING_UPDATE_FAILED);
+          throw new CalIntError(
+            ERROR_MESSAGES.TYPE_MAPPING_UPDATE_FAILED,
+            "TYPE_MAPPING_UPDATE_FAILED",
+          );
         }
 
         return updatedMapping[0];
       },
       "updateTypeMapping",
+      "db",
+      undefined,
       { typeMapping },
     );
   }
@@ -536,7 +652,8 @@ export class DatabaseQueries {
   async createTypeMapping(
     typeMapping: NewTypeMappingType,
   ): PromiseReturn<TypeMappingType> {
-    return this.withErrorHandling(
+    return withLogging(
+      this.logger,
       async () => {
         const newMapping = await db
           .insert(eventActivityTypesMapping)
@@ -544,12 +661,17 @@ export class DatabaseQueries {
           .returning();
 
         if (newMapping.length === 0) {
-          throw new Error(ERROR_MESSAGES.TYPE_MAPPING_CREATION_FAILED);
+          throw new CalIntError(
+            ERROR_MESSAGES.TYPE_MAPPING_CREATION_FAILED,
+            "TYPE_MAPPING_CREATION_FAILED",
+          );
         }
 
         return newMapping[0];
       },
       "createTypeMapping",
+      "db",
+      undefined,
       { typeMapping },
     );
   }
@@ -557,7 +679,8 @@ export class DatabaseQueries {
   async updateOrCreateTypeMapping(
     typeMapping: NewTypeMappingType,
   ): PromiseReturn<TypeMappingType> {
-    return this.withErrorHandling(
+    return withLogging(
+      this.logger,
       async () => {
         const [existingMappingError, existingMapping] =
           await this.getTypeMapping(
@@ -580,6 +703,8 @@ export class DatabaseQueries {
         return newMapping;
       },
       "updateOrCreateTypeMapping",
+      "db",
+      undefined,
       { typeMapping },
     );
   }
@@ -587,7 +712,8 @@ export class DatabaseQueries {
   async getAllTypeMappings(
     companyId: string,
   ): PromiseReturn<TypeMappingType[]> {
-    return this.withErrorHandling(
+    return withLogging(
+      this.logger,
       async () => {
         return await db
           .select()
@@ -595,19 +721,24 @@ export class DatabaseQueries {
           .where(eq(eventActivityTypesMapping.companyId, companyId));
       },
       "getAllTypeMappings",
+      "db",
+      undefined,
       { companyId },
     );
   }
 
   async getAllEventTypes(companyId: string): PromiseReturn<CalEventType[]> {
-    return this.withErrorHandling(
-      async () => {
-        return await db
+    return withLogging(
+      this.logger,
+      () => {
+        return db
           .select()
           .from(calEventTypes)
           .where(eq(calEventTypes.companyId, companyId));
       },
       "getAllEventTypes",
+      "db",
+      undefined,
       { companyId },
     );
   }
@@ -615,7 +746,8 @@ export class DatabaseQueries {
   async getAllActivityTypes(
     companyId: string,
   ): PromiseReturn<PipedriveActivityType[]> {
-    return this.withErrorHandling(
+    return withLogging(
+      this.logger,
       () => {
         return db
           .select()
@@ -623,6 +755,8 @@ export class DatabaseQueries {
           .where(eq(pipedriveActivityTypes.companyId, companyId));
       },
       "getAllActivityTypes",
+      "db",
+      undefined,
       { companyId },
     );
   }
@@ -630,7 +764,8 @@ export class DatabaseQueries {
   async addAllEventTypes(
     eventTypes: NewCalEventType[],
   ): PromiseReturn<{ message: string; added: number; skipped?: number }> {
-    return this.withErrorHandling(
+    return withLogging(
+      this.logger,
       async () => {
         const [checkError, result] =
           await this.checkExistingEventTypes(eventTypes);
@@ -655,6 +790,8 @@ export class DatabaseQueries {
         };
       },
       "addAllEventTypes",
+      "db",
+      undefined,
       { eventTypes },
     );
   }
@@ -664,7 +801,8 @@ export class DatabaseQueries {
     new: NewCalEventType[];
     hasConflicts: boolean;
   }> {
-    return this.withErrorHandling(
+    return withLogging(
+      this.logger,
       async () => {
         const existingTypes = await db
           .select()
@@ -688,6 +826,8 @@ export class DatabaseQueries {
         };
       },
       "checkExistingEventTypes",
+      "db",
+      undefined,
       { eventTypes },
     );
   }
@@ -695,7 +835,8 @@ export class DatabaseQueries {
   async addAllActivityTypes(
     activityTypes: NewPipedriveActivityType[],
   ): PromiseReturn<{ message: string; added: number; skipped?: number }> {
-    return this.withErrorHandling(
+    return withLogging(
+      this.logger,
       async () => {
         const [checkError, result] =
           await this.checkExistingActivityTypes(activityTypes);
@@ -720,6 +861,8 @@ export class DatabaseQueries {
         };
       },
       "addAllActivityTypes",
+      "db",
+      undefined,
       { activityTypes },
     );
   }
@@ -731,7 +874,8 @@ export class DatabaseQueries {
     new: NewPipedriveActivityType[];
     hasConflicts: boolean;
   }> {
-    return this.withErrorHandling(
+    return withLogging(
+      this.logger,
       async () => {
         const existingTypes = await db
           .select()
@@ -758,22 +902,30 @@ export class DatabaseQueries {
         };
       },
       "checkExistingActivityTypes",
+      "db",
+      undefined,
       { activityTypes },
     );
   }
 
   async getUser(userId: number): PromiseReturn<User> {
-    return this.withErrorHandling(
+    return withLogging(
+      this.logger,
       async () => {
         const user = await db.select().from(users).where(eq(users.id, userId));
 
         if (user.length !== 1) {
-          throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+          throw new CalIntError(
+            ERROR_MESSAGES.USER_NOT_FOUND,
+            "USER_NOT_FOUND",
+          );
         }
 
         return user[0];
       },
       "getUser",
+      "db",
+      undefined,
       { userId },
     );
   }
@@ -781,7 +933,8 @@ export class DatabaseQueries {
   async getUserAndCalendlyAccByCalendlyEmail(
     email: string,
   ): PromiseReturn<UserCalendly> {
-    return this.withErrorHandling(
+    return withLogging(
+      this.logger,
       async () => {
         const res = await db
           .select()
@@ -790,18 +943,24 @@ export class DatabaseQueries {
           .where(eq(calendlyAccs.email, email));
 
         if (res.length != 1) {
-          throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+          throw new CalIntError(
+            ERROR_MESSAGES.USER_NOT_FOUND,
+            "USER_NOT_FOUND",
+          );
         }
 
         return res[0];
       },
       "getUserAndCalendlyAccByCalendlyEmail",
+      "db",
+      undefined,
       { email },
     );
   }
 
   async getUserAndCalendlyAcc(userId: number): PromiseReturn<UserCalendly> {
-    return this.withErrorHandling(
+    return withLogging(
+      this.logger,
       async () => {
         const res = await db
           .select()
@@ -810,18 +969,24 @@ export class DatabaseQueries {
           .where(eq(users.id, userId));
 
         if (res.length != 1) {
-          throw new Error(ERROR_MESSAGES.USER_NOT_FOUND);
+          throw new CalIntError(
+            ERROR_MESSAGES.USER_NOT_FOUND,
+            "USER_NOT_FOUND",
+          );
         }
 
         return res[0];
       },
       "getUserAndCalendlyAcc",
+      "db",
+      undefined,
       { userId },
     );
   }
 
   async getCompanyById(companyId: string): PromiseReturn<Company> {
-    return this.withErrorHandling(
+    return withLogging(
+      this.logger,
       async () => {
         const company = await db
           .select()
@@ -829,20 +994,29 @@ export class DatabaseQueries {
           .where(eq(companies.id, companyId));
 
         if (company.length < 1) {
-          throw new Error(ERROR_MESSAGES.COMPANY_NOT_FOUND);
+          throw new CalIntError(
+            ERROR_MESSAGES.COMPANY_NOT_FOUND,
+            "COMPANY_NOT_FOUND",
+          );
         } else if (company.length > 1) {
-          throw new Error(ERROR_MESSAGES.TOO_MANY_COMPANIES_FOUND);
+          throw new CalIntError(
+            ERROR_MESSAGES.TOO_MANY_COMPANIES_FOUND,
+            "TOO_MANY_COMPANIES_FOUND",
+          );
         }
 
         return company[0];
       },
       "getCompanyById",
+      "db",
+      undefined,
       { companyId },
     );
   }
 
   async getCompany(companyDomain: string): PromiseReturn<Company> {
-    return this.withErrorHandling(
+    return withLogging(
+      this.logger,
       async () => {
         const company = await db
           .select()
@@ -850,20 +1024,29 @@ export class DatabaseQueries {
           .where(eq(companies.domain, companyDomain));
 
         if (company.length < 1) {
-          throw new Error(ERROR_MESSAGES.COMPANY_NOT_FOUND);
+          throw new CalIntError(
+            ERROR_MESSAGES.COMPANY_NOT_FOUND,
+            "COMPANY_NOT_FOUND",
+          );
         } else if (company.length > 1) {
-          throw new Error(ERROR_MESSAGES.TOO_MANY_COMPANIES_FOUND);
+          throw new CalIntError(
+            ERROR_MESSAGES.TOO_MANY_COMPANIES_FOUND,
+            "TOO_MANY_COMPANIES_FOUND",
+          );
         }
 
         return company[0];
       },
       "getCompany",
+      "db",
+      undefined,
       { companyDomain },
     );
   }
 
   async createCompany(companyValues: NewCompany): PromiseReturn<Company> {
-    return this.withErrorHandling(
+    return withLogging(
+      this.logger,
       async () => {
         const company = await db
           .insert(companies)
@@ -871,12 +1054,17 @@ export class DatabaseQueries {
           .returning();
 
         if (company.length !== 1) {
-          throw new Error(ERROR_MESSAGES.COMPANY_CREATION_ERROR);
+          throw new CalIntError(
+            ERROR_MESSAGES.COMPANY_CREATION_ERROR,
+            "COMPANY_CREATION_ERROR",
+          );
         }
 
         return company[0];
       },
       "createCompany",
+      "db",
+      undefined,
       { companyValues },
     );
   }
@@ -884,14 +1072,13 @@ export class DatabaseQueries {
   async createCompanyOrReturnCompany(
     companyValues: NewCompany,
   ): PromiseReturn<Company> {
-    return this.withErrorHandling(
+    return withLogging(
+      this.logger,
       async () => {
         const [error, company] = await this.getCompany(companyValues.domain);
 
         if (error) {
-          if (
-            error.error.toString().includes(ERROR_MESSAGES.COMPANY_NOT_FOUND)
-          ) {
+          if (error.code === "COMPANY_NOT_FOUND") {
             const [createError, createdCompany] =
               await this.createCompany(companyValues);
             if (createError) throw createError;
@@ -903,28 +1090,40 @@ export class DatabaseQueries {
 
         if (company) return company;
 
-        throw new Error("Unexpected state: No company and no error");
+        throw new CalIntError(
+          "Unexpected state: No company and no error",
+          "UNEXPECTED_ERROR",
+        );
       },
       "createCompanyOrReturnCompany",
+      "db",
+      undefined,
       { companyValues },
     );
   }
 
   async updateCompany(company: Company): PromiseReturn<Company> {
-    return this.withErrorHandling(
+    return withLogging(
+      this.logger,
       async () => {
-        const [err, updatedCompany] = await db
+        const updatedCompany = await db
           .update(companies)
           .set(company)
-          .where(eq(companies.id, company.id));
+          .where(eq(companies.id, company.id))
+          .returning();
 
-        if (err) {
-          throw err;
+        if (updatedCompany.length === 0) {
+          throw new CalIntError(
+            ERROR_MESSAGES.COMPANY_UPDATE_FAILED,
+            "COMPANY_UPDATE_FAILED",
+          );
         }
 
-        return updatedCompany;
+        return updatedCompany[0];
       },
       "updateCompany",
+      "db",
+      undefined,
       { company },
     );
   }
@@ -939,11 +1138,15 @@ export class DatabaseQueries {
       scope,
       api_domain: apiDomain,
     }: TokenResponse,
-  ): Promise<Readonly<[null, boolean] | [CalIntError, null]>> {
-    return this.withErrorHandling(
+  ): PromiseReturn<boolean> {
+    return withLogging(
+      this.logger,
       async () => {
         if (!user.id || !user.name) {
-          throw new Error(ERROR_MESSAGES.MISSING_REQUIRED_FIELDS);
+          throw new CalIntError(
+            ERROR_MESSAGES.MISSING_REQUIRED_FIELDS,
+            "MISSING_REQUIRED_FIELDS",
+          );
         }
 
         const [error, company] = await this.createCompanyOrReturnCompany({
@@ -971,12 +1174,17 @@ export class DatabaseQueries {
           .returning();
 
         if (createdUserList.length < 1) {
-          throw new Error(ERROR_MESSAGES.USER_CREATION_FAILED);
+          throw new CalIntError(
+            ERROR_MESSAGES.USER_CREATION_FAILED,
+            "USER_CREATION_FAILED",
+          );
         }
 
         return true;
       },
       "createUser",
+      "db",
+      undefined,
       { user },
     );
   }
@@ -984,13 +1192,16 @@ export class DatabaseQueries {
   async loginWithPipedrive(
     pipedriveAccId: number,
     logins: TokenResponse,
-  ): Promise<Readonly<[CalIntError, null] | [null, boolean]>> {
-    return this.withErrorHandling(
+  ): PromiseReturn<boolean> {
+    return withLogging(
+      this.logger,
       async () => {
         await db.update(users).set(logins).where(eq(users.id, pipedriveAccId));
         return true;
       },
       "loginWithPipedrive",
+      "db",
+      undefined,
       { pipedriveAccId },
     );
   }
@@ -1000,7 +1211,8 @@ export class DatabaseQueries {
     calendlyUser: CalendlyUser,
     { accessToken, refreshToken, expiresAt }: AccountLogin,
   ): PromiseReturn<User> {
-    return this.withErrorHandling(
+    return withLogging(
+      this.logger,
       async () => {
         await db.insert(calendlyAccs).values({
           userId,
@@ -1015,11 +1227,13 @@ export class DatabaseQueries {
 
         const [err, user] = await this.getUser(userId);
 
-        if (err) throw err.error;
+        if (err) throw err;
 
         return user;
       },
       "addCalendlyAccountToUser",
+      "db",
+      undefined,
       { userId, calendlyUser },
     );
   }
@@ -1029,7 +1243,8 @@ export class DatabaseQueries {
     creds: AccountLogin,
     userId?: number,
   ): PromiseReturn<User | null> {
-    return this.withErrorHandling(
+    return withLogging(
+      this.logger,
       async () => {
         const formattedCreds = {
           ...creds,
@@ -1037,7 +1252,10 @@ export class DatabaseQueries {
         };
 
         if (isNaN(formattedCreds.expiresAt.getTime())) {
-          throw new Error("Invalid expiration date");
+          throw new CalIntError(
+            "Invalid expiration date",
+            "INVALID_EXPIRATION_DATE",
+          );
         }
 
         await db
@@ -1045,35 +1263,38 @@ export class DatabaseQueries {
           .set(formattedCreds)
           .where(eq(calendlyAccs.uri, calendlyUri));
 
-        if (!userId)
-          return null;
+        if (!userId) return null;
 
         const [err, user] = await this.getUser(userId);
-        if (err) throw err.error;
+        if (err) throw err;
 
         return user;
       },
       "loginWithCalendly",
-      { calendlyUri },
+      "db",
+      undefined,
+      { calendlyUri, userId },
     );
   }
 
-  async checkUserExists(
-    userId: number,
-  ): Promise<Readonly<[CalIntError, null] | [null, User[]]>> {
-    return this.withErrorHandling(
-      async () => {
-        return await db.select().from(users).where(eq(users.id, userId));
+  async checkUserExists(userId: number): PromiseReturn<User[]> {
+    return withLogging(
+      this.logger,
+      () => {
+        return db.select().from(users).where(eq(users.id, userId));
       },
       "checkUserExists",
+      "db",
+      undefined,
       { userId },
     );
   }
 
   async checkCalendlyUserExist(userId: number): PromiseReturn<any[]> {
-    return this.withErrorHandling(
-      async () => {
-        return await db
+    return withLogging(
+      this.logger,
+      () => {
+        return db
           .select()
           .from(users)
           .innerJoin(calendlyAccs, eq(users.id, calendlyAccs.userId))
@@ -1081,15 +1302,12 @@ export class DatabaseQueries {
           .limit(1);
       },
       "checkCalendlyUserExist",
+      "db",
+      undefined,
       { userId },
     );
   }
 }
-
-export type CalIntError = {
-  message: string;
-  error: any;
-};
 
 export type UserPipedriveUnion = {
   users: {
@@ -1128,5 +1346,3 @@ export type CalendlyUser = {
 };
 
 export const querier = new DatabaseQueries();
-
-type DatabaseOperation<T> = (...args: any[]) => Promise<T>;

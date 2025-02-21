@@ -2,7 +2,7 @@ import { querier } from "@/db/queries";
 import { CalendlyController } from "@/lib/calendly/calendly-controller";
 import { CalintSetup } from "@/lib/calint-setup";
 import { PipedriveController } from "@/lib/pipedrive/pipedrive-controller";
-import createLogger, { logError } from "@/utils/logger";
+import createLogger, { logMessage } from "@/utils/logger";
 import { NextRequest, NextResponse } from "next/server";
 
 const logger = createLogger("jsonpipedrive");
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
   const stringUserId = request.nextUrl.searchParams.get("userId");
   const stringDealId = request.nextUrl.searchParams.get("selectedIds");
   if (!stringUserId || !stringDealId) {
-    logError(logger, new Error("No userId or selectedIds provided in request"));
+    logMessage(logger, "error", "userId or selectedIds missing");
     return NextResponse.json(
       { error: "No UserID or selectedIds" },
       { status: 400 },
@@ -45,11 +45,9 @@ export async function GET(request: NextRequest) {
     dealId,
   );
   if (errJsonPanel) {
-    logError(logger, errJsonPanel, { context: "/jsonpipdrive", userId });
+    logMessage(logger, "error", errJsonPanel.message);
     return NextResponse.json({ error: errJsonPanel.message }, { status: 400 });
   }
-
-  logger.info("jsonPanel: " + jsonPanel);
 
   return NextResponse.json(jsonPanel);
 }

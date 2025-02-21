@@ -1,7 +1,13 @@
-import { CalendlyUser, CalIntError, querier } from "@/db/queries";
+import { CalendlyUser, querier } from "@/db/queries";
 import { env } from "./env";
 import dayjs from "dayjs";
-import { createLogger, logAPICall, logError } from "@/utils/logger";
+import {
+  createLogger,
+  withLogging,
+  CalIntError,
+  ERROR_MESSAGES,
+  PromiseReturn,
+} from "@/utils/logger";
 
 export class CalendlyClient {
   private logger = createLogger("CalendlyClient");
@@ -33,8 +39,9 @@ export class CalendlyClient {
       requiresAuth?: boolean;
       isAuthEndpoint?: boolean;
       skipTokenRefresh?: boolean;
+      skipLogging?: boolean;
     },
-  ): Promise<readonly [CalIntError, null] | readonly [null, T]> {
+  ): PromiseReturn<T> {
     const {
       method,
       body,
@@ -42,19 +49,19 @@ export class CalendlyClient {
       requiresAuth = true,
       isAuthEndpoint = false,
       skipTokenRefresh = false,
+      skipLogging = false,
     } = options;
 
-    try {
+    const makeRequestLogic = async () => {
       if (requiresAuth && !isAuthEndpoint && !skipTokenRefresh) {
         const [refreshErr] = await this.refreshAccessToken();
         if (refreshErr) {
-          return [
-            {
-              message: "Could not refresh token",
-              error: new Error("could not refresh token" + refreshErr.message),
-            },
-            null,
-          ] as const;
+          throw new CalIntError(
+            ERROR_MESSAGES.UNEXPECTED_ERROR,
+            "UNEXPECTED_ERROR",
+            false,
+            { originalError: refreshErr },
+          );
         }
       }
 
@@ -96,48 +103,38 @@ export class CalendlyClient {
 
       const data = await res.json();
 
-      logAPICall(this.logger, {
-        service: "Calendly",
-        method,
-        endpoint,
-        status: res.status,
-        statusText: res.statusText,
-        response: data,
-      });
-
       if (!res.ok) {
-        logError(this.logger, data, {
-          operation: endpoint,
-          status: res.status,
-          statusText: res.statusText,
-          response: data,
-        });
-        return [
-          {
-            message: `Request failed: ${endpoint}`,
-            error: data,
-          },
-          null,
-        ] as const;
+        throw new CalIntError(
+          `Request failed: ${endpoint}`,
+          "UNEXPECTED_ERROR",
+          false,
+          { status: res.status, statusText: res.statusText, response: data },
+        );
       }
 
-      return [null, data] as const;
-    } catch (error) {
-      logError(this.logger, error, {
-        operation: endpoint,
-      });
-      return [
+      return data;
+    };
+
+    if (skipLogging) {
+      return makeRequestLogic();
+    } else {
+      return withLogging(
+        this.logger,
+        makeRequestLogic,
+        `makeRequest_${endpoint}`,
+        "api",
         {
-          message: `Request failed: ${endpoint}`,
-          error,
+          service: "Calendly",
+          method,
+          endpoint,
         },
-        null,
-      ] as const;
+        options,
+      );
     }
   }
 
-  async getAccessToken(code: string) {
-    return await this.makeRequest<GetAccessTokenRes>("/oauth/token", {
+  async getAccessToken(code: string): PromiseReturn<GetAccessTokenRes> {
+    return this.makeRequest<GetAccessTokenRes>("/oauth/token", {
       method: "POST",
       body: {
         grant_type: "authorization_code",
@@ -149,57 +146,69 @@ export class CalendlyClient {
     });
   }
 
-  async refreshAccessToken() {
-    const now = Date.now();
-    if (now - this.lastTokenRefresh < this.TOKEN_REFRESH_INTERVAL) {
-      this.logger.info(`Token refresh skipped: too soon since last refresh`);
-      return [null, null] as const;
-    }
+  async refreshAccessToken(): PromiseReturn<GetAccessTokenRes | null> {
+    return withLogging(
+      this.logger,
+      async () => {
+        const now = Date.now();
+        if (now - this.lastTokenRefresh < this.TOKEN_REFRESH_INTERVAL) {
+          return null;
+        }
 
-    this.logger.warn("TOKEN: " + this.refreshToken);
+        const [err, data] = await this.makeRequest<GetAccessTokenRes>(
+          "/oauth/token",
+          {
+            method: "POST",
+            body: {
+              grant_type: "refresh_token",
+              refresh_token: this.refreshToken,
+            },
+            isAuthEndpoint: true,
+            skipLogging: true,
+          },
+        );
 
-    const [err, data] = await this.makeRequest<GetAccessTokenRes>(
-      "/oauth/token",
-      {
-        method: "POST",
-        body: {
-          grant_type: "refresh_token",
-          refresh_token: this.refreshToken,
-        },
-        isAuthEndpoint: true,
+        if (err) throw err;
+
+        const expirationDate = dayjs().add(data.expires_in, "second").toDate();
+        const credentials = {
+          accessToken: data.access_token,
+          refreshToken: data.refresh_token,
+          expiresAt: expirationDate,
+        };
+
+        const [dbErr] = await querier.loginWithCalendly(
+          data.owner,
+          credentials,
+        );
+        if (dbErr) {
+          throw new CalIntError(
+            ERROR_MESSAGES.LOGIN_FAILED,
+            "LOGIN_FAILED",
+            false,
+            { owner: data.owner },
+          );
+        }
+
+        this.updateCalendlyTokens(data);
+        this.organization = data.organization;
+        this.lastTokenRefresh = now;
+
+        return data;
       },
+      "refreshAccessToken",
+      "api",
+      {
+        service: "Calendly",
+        method: "POST",
+        endpoint: "/oauth/token",
+      },
+      this.refreshToken,
     );
-
-    if (err) return [err, null] as const;
-
-    const expirationDate = dayjs().add(data.expires_in, "second").toDate();
-    const credentials = {
-      accessToken: data.access_token,
-      refreshToken: data.refresh_token,
-      expiresAt: expirationDate,
-    };
-
-    const [dbErr] = await querier.loginWithCalendly(data.owner, credentials);
-    if (dbErr) {
-      logError(this.logger, dbErr, {
-        operation: "refreshAccessToken",
-        owner: data.owner,
-      });
-      return [dbErr, null] as const;
-    }
-
-    this.updateCalendlyTokens(data);
-    this.organization = data.organization;
-    this.lastTokenRefresh = now;
-
-    return [null, data] as const;
   }
 
-  async getOrganizationMemberships() {
-    const [err] = await this.refreshAccessToken();
-    if (err) return [err, null] as const;
-
-    return await this.makeRequest<GetOrganizationMembershipResponse>(
+  async getOrganizationMemberships(): PromiseReturn<GetOrganizationMembershipResponse> {
+    return this.makeRequest<GetOrganizationMembershipResponse>(
       "/organization_memberships",
       {
         method: "GET",
@@ -211,28 +220,20 @@ export class CalendlyClient {
     );
   }
 
-  async getAllEventTypes() {
-    const [err] = await this.refreshAccessToken();
-    if (err) return [err, null] as const;
-
-    const result = await this.makeRequest<GetEventTypesResponse>(
-      "/event_types",
-      {
-        method: "GET",
-        params: {
-          organization: this.organization,
-          count: "100",
-        },
+  async getAllEventTypes(): PromiseReturn<GetEventTypesResponse> {
+    return this.makeRequest<GetEventTypesResponse>("/event_types", {
+      method: "GET",
+      params: {
+        organization: this.organization,
+        count: "100",
       },
-    );
-    return result;
+    });
   }
 
-  async getEventTypesByUserId(userId: string) {
-    const [err] = await this.refreshAccessToken();
-    if (err) return [err, null] as const;
-
-    return await this.makeRequest<GetEventTypesResponse>("/event_types", {
+  async getEventTypesByUserId(
+    userId: string,
+  ): PromiseReturn<GetEventTypesResponse> {
+    return this.makeRequest<GetEventTypesResponse>("/event_types", {
       method: "GET",
       params: {
         user: userId,
@@ -241,8 +242,11 @@ export class CalendlyClient {
     });
   }
 
-  async createWebhookSubscription(organization: string, user: string) {
-    return await this.makeRequest<CalendlyWebhookSubscription>(
+  async createWebhookSubscription(
+    organization: string,
+    user: string,
+  ): PromiseReturn<CalendlyWebhookSubscription> {
+    return this.makeRequest<CalendlyWebhookSubscription>(
       "/webhook_subscriptions",
       {
         method: "POST",
@@ -262,8 +266,8 @@ export class CalendlyClient {
     );
   }
 
-  async getUserInfo() {
-    return await this.makeRequest<CalendlyGetUserMeRes>("/users/me", {
+  async getUserInfo(): PromiseReturn<CalendlyGetUserMeRes> {
+    return this.makeRequest<CalendlyGetUserMeRes>("/users/me", {
       method: "GET",
       requiresAuth: true,
       skipTokenRefresh: true,

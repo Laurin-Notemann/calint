@@ -12,15 +12,15 @@ function PipedriveFrameContent() {
   const searchParams = useSearchParams();
   const userId = searchParams.get("userId");
   const dealId = searchParams.get("selectedIds");
-  const {
-    isLoading,
-    error,
-    data,
-  } = useQuery({
+  const { isLoading, error, data } = useQuery({
     queryKey: ["settingsData"],
     queryFn: async (): Promise<JsonPanel> => {
       const res = await fetch(
-        env.NEXT_PUBLIC_BASE_URL + "/api/v1/jsonpipedrive?userId=" + userId + "&selectedIds=" + dealId,
+        env.NEXT_PUBLIC_BASE_URL +
+          "/api/v1/jsonpipedrive?userId=" +
+          userId +
+          "&selectedIds=" +
+          dealId,
       );
 
       return res.json();
@@ -42,13 +42,9 @@ function PipedriveFrameContent() {
   if (!userId) return <>UserId not found</>;
   if (!dealId) return <>DealId not found</>;
 
-  if (error)
-    return (
-      <div>Could not get any data: {error.message}</div>
-    );
+  if (error) return <div>Could not get any data: {error.message}</div>;
 
-  if (isLoading)
-    return <div>Currently fetching Pipedrive Activities</div>;
+  if (isLoading) return <div>Currently fetching Pipedrive Activities</div>;
 
   return (
     <>
