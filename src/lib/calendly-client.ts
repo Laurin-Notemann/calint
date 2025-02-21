@@ -5,7 +5,6 @@ import {
   createLogger,
   withLogging,
   CalIntError,
-  ERROR_MESSAGES,
   PromiseReturn,
   logMessage,
 } from "@/utils/logger";
@@ -59,18 +58,13 @@ export class CalendlyClient {
         if (refreshErr) throw refreshErr
       }
 
-      logMessage(this.logger, "info", 'Test1')
-
       const baseUrl = isAuthEndpoint ? this.authUrl : this.baseUrl;
-      logMessage(this.logger, "info", 'Test2')
       const url = new URL(endpoint, baseUrl);
       if (params) {
         Object.entries(params).forEach(([key, value]) => {
           url.searchParams.append(key, value);
         });
       }
-
-      logMessage(this.logger, "info", 'Test3')
 
       const headers: Record<string, string> = {
         "Content-Type": isAuthEndpoint
@@ -88,8 +82,6 @@ export class CalendlyClient {
         }
       }
 
-      logMessage(this.logger, "info", 'Test4')
-
       const res = await fetch(url.toString(), {
         method,
         headers,
@@ -102,11 +94,7 @@ export class CalendlyClient {
         }),
       });
 
-      logMessage(this.logger, "info", 'Test5')
-
       const data = await res.json();
-
-      logMessage(this.logger, "info", 'Test6')
 
       if (!res.ok) {
         throw new CalIntError(
@@ -116,8 +104,6 @@ export class CalendlyClient {
           { status: res.status, statusText: res.statusText, response: data },
         );
       }
-
-      logMessage(this.logger, "info", 'Test7')
 
       return data;
     };
@@ -162,7 +148,8 @@ export class CalendlyClient {
           return null;
         }
 
-        const [err, data] = await this.makeRequest<GetAccessTokenRes>(
+
+        const res = await this.makeRequest<GetAccessTokenRes>(
           "/oauth/token",
           {
             method: "POST",
@@ -174,6 +161,10 @@ export class CalendlyClient {
             skipLogging: true,
           },
         );
+
+        logMessage(this.logger, 'info', JSON.stringify(res))
+
+        const [err, data] = res
         if (err) throw err;
 
         const expirationDate = dayjs().add(data.expires_in, "second").toDate();
