@@ -779,31 +779,35 @@ export class PipedriveController {
   }
 
   async authorize(code: string) {
-    this.logger.warn("test")
-    const res = await this.oauth2.authorize(code);
-    this.logger.warn("test2")
-    const resV2 = await this.oauth2V2.authorize(code);
-    this.logger.warn("test3")
+    try {
+      const res = await this.oauth2.authorize(code);
 
-    const [configErr, _] = await this.updateConfig(res, resV2);
-    if (configErr) {
-      logError(this.logger, configErr, { context: "authorize" });
-      return [configErr, null] as const;
+      const [configErr, _] = await this.updateConfig(res);
+      if (configErr) {
+        logError(this.logger, configErr, { context: "authorize" });
+        return [configErr, null] as const;
+      }
+
+      const [err, user] = await this.getUser();
+      if (err) {
+        logError(this.logger, err, { context: "authorize" });
+        return [err, null] as const;
+      }
+
+      const [saveErr, __] = await this.saveUserToDB(user);
+      if (saveErr) {
+        logError(this.logger, saveErr, { context: "authorize" });
+        return [saveErr, null] as const;
+      }
+
+      return [null, user] as const;
+
+    } catch (error) {
+      return [{
+        message: "Could not authorize: " + error,
+        error
+      }, null] as const
     }
-
-    const [err, user] = await this.getUser();
-    if (err) {
-      logError(this.logger, err, { context: "authorize" });
-      return [err, null] as const;
-    }
-
-    const [saveErr, __] = await this.saveUserToDB(user);
-    if (saveErr) {
-      logError(this.logger, saveErr, { context: "authorize" });
-      return [saveErr, null] as const;
-    }
-
-    return [null, user] as const;
   }
 
   private async saveUserToDB(user: GetCurrentUserResponseAllOfData) {
@@ -941,12 +945,12 @@ export class PipedriveController {
     return [null, true] as const;
   }
 
-  private async updateConfig(tokens?: TokenResponse, tokensV2?: TokenResponse) {
-    if (tokens && tokensV2) {
+  private async updateConfig(tokens?: TokenResponse) {
+    if (tokens) {
       this.tokens = { ...tokens };
-      this.tokensV2 = { ...tokensV2 };
+      this.tokensV2 = { ...tokens };
       this.oauth2.updateToken(tokens);
-      this.oauth2V2.updateToken(tokensV2);
+      this.oauth2V2.updateToken(tokens);
     } else {
       const [err, _] = await this.setTokenFromDB();
 
