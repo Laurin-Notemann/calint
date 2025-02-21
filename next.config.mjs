@@ -9,6 +9,19 @@ const nextConfig = {
   async headers() {
     return [
       {
+        source: '/pipedrive-frame/side-panel',
+        headers: [
+          {
+            key: 'X-Frame-Options',
+            value: 'ALLOW-FROM https://*.pipedrive.com'
+          },
+          {
+            key: 'Content-Security-Policy',
+            value: "frame-ancestors 'self' https://*.pipedrive.com"
+          }
+        ],
+      },
+      {
         source: '/pipedrive-frame/settings',
         headers: [
           {

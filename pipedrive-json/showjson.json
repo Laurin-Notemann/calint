@@ -11,7 +11,7 @@
         "block_key_info": {
           "$ref": "#/definitions/element-text",
           "options": {
-            "value": "Thank you for using the cake ordering app!"
+            "value": "Select Show or No Show!"
           }
         }
       }
@@ -24,6 +24,20 @@
           "options": {
             "label": "Cancel",
             "handler": "cancel"
+          }
+        },
+        "show": {
+          "$ref": "#/definitions/action-primary",
+          "options": {
+            "label": "Show",
+            "handler": "request"
+          }
+        },
+        "no_show": {
+          "$ref": "#/definitions/action-primary",
+          "options": {
+            "label": "No Show",
+            "handler": "request"
           }
         }
       }
