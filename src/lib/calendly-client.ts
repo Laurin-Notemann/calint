@@ -106,6 +106,8 @@ export class CalendlyClient {
 
       const data = await res.json();
 
+      logMessage(this.logger, "info", 'Test6')
+
       if (!res.ok) {
         throw new CalIntError(
           `Request failed: ${endpoint}`,
@@ -114,6 +116,8 @@ export class CalendlyClient {
           { status: res.status, statusText: res.statusText, response: data },
         );
       }
+
+      logMessage(this.logger, "info", 'Test7')
 
       return data;
     };
