@@ -31,7 +31,7 @@ function PipedriveFrameContent() {
   useEffect(() => {
     const initializePipedrive = async () => {
       try {
-        const sdk = await new AppExtensionsSDK().initialize({
+        const sdk = await new AppExtensionsSDK({identifier: "2a70906d-dd08-429e-b2be-44f28358ca78"}).initialize({
           size: { height: 1000, width: 1000 },
         });
         const settings = sdk.userSettings;
