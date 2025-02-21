@@ -801,12 +801,14 @@ export class PipedriveController {
       }
 
       return [null, user] as const;
-
     } catch (error) {
-      return [{
-        message: "Could not authorize: " + error,
-        error
-      }, null] as const
+      return [
+        {
+          message: "Could not authorize: " + error,
+          error,
+        },
+        null,
+      ] as const;
     }
   }
 

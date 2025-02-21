@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
         const [err, dbUser] = await querier.loginWithCalendly(
           calendlyAcc[0].calendly_accs.uri,
           credentials,
-          userId
+          userId,
         );
         if (err) {
           logError(logger, err, { context: "Failed to login with Calendly" });

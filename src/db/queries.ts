@@ -1027,8 +1027,8 @@ export class DatabaseQueries {
   async loginWithCalendly(
     calendlyUri: string,
     creds: AccountLogin,
-    userId: number,
-  ): PromiseReturn<User> {
+    userId?: number,
+  ): PromiseReturn<User | null> {
     return this.withErrorHandling(
       async () => {
         const formattedCreds = {
@@ -1043,7 +1043,10 @@ export class DatabaseQueries {
         await db
           .update(calendlyAccs)
           .set(formattedCreds)
-          .where(eq(calendlyAccs.uri, calendlyUri))
+          .where(eq(calendlyAccs.uri, calendlyUri));
+
+        if (!userId)
+          return null;
 
         const [err, user] = await this.getUser(userId);
         if (err) throw err.error;

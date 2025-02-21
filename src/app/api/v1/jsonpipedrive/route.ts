@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: errJsonPanel.message }, { status: 400 });
   }
 
-  logger.info('jsonPanel: ' + jsonPanel);
+  logger.info("jsonPanel: " + jsonPanel);
 
   return NextResponse.json(jsonPanel);
 }

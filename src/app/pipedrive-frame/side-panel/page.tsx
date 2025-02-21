@@ -20,7 +20,6 @@ function PipedriveFrameContent() {
     initializePipedrive();
   }, [searchParams]);
 
-
   if (!userId) return <>UserId not found</>;
 
   return <p>Test</p>;
@@ -33,4 +32,3 @@ export default function PipedriveFrame() {
     </Suspense>
   );
 }
-
