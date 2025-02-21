@@ -7,6 +7,7 @@ import {
   CalIntError,
   ERROR_MESSAGES,
   PromiseReturn,
+  logMessage,
 } from "@/utils/logger";
 
 export class CalendlyClient {
@@ -55,14 +56,7 @@ export class CalendlyClient {
     const makeRequestLogic = async () => {
       if (requiresAuth && !isAuthEndpoint && !skipTokenRefresh) {
         const [refreshErr] = await this.refreshAccessToken();
-        if (refreshErr) {
-          throw new CalIntError(
-            ERROR_MESSAGES.UNEXPECTED_ERROR,
-            "UNEXPECTED_ERROR",
-            false,
-            { originalError: refreshErr },
-          );
-        }
+        if (refreshErr) throw refreshErr
       }
 
       const baseUrl = isAuthEndpoint ? this.authUrl : this.baseUrl;
@@ -155,6 +149,8 @@ export class CalendlyClient {
           return null;
         }
 
+        logMessage(this.logger, 'info', 'Test1')
+
         const [err, data] = await this.makeRequest<GetAccessTokenRes>(
           "/oauth/token",
           {
@@ -167,8 +163,9 @@ export class CalendlyClient {
             skipLogging: true,
           },
         );
-
         if (err) throw err;
+
+        logMessage(this.logger, 'info', 'Test2')
 
         const expirationDate = dayjs().add(data.expires_in, "second").toDate();
         const credentials = {
@@ -177,18 +174,13 @@ export class CalendlyClient {
           expiresAt: expirationDate,
         };
 
+        logMessage(this.logger, 'info', 'Test3')
+
         const [dbErr] = await querier.loginWithCalendly(
           data.owner,
           credentials,
         );
-        if (dbErr) {
-          throw new CalIntError(
-            ERROR_MESSAGES.LOGIN_FAILED,
-            "LOGIN_FAILED",
-            false,
-            { owner: data.owner },
-          );
-        }
+        if (dbErr) throw dbErr
 
         this.updateCalendlyTokens(data);
         this.organization = data.organization;
@@ -506,11 +498,11 @@ interface GetOrganizationMembershipResponse {
 
 export type WebhookPayload = {
   event:
-    | "invitee.created"
-    | "invitee.canceled"
-    | "invitee_no_show.created"
-    | "invitee_no_show.deleted"
-    | "routing_form_submission.created";
+  | "invitee.created"
+  | "invitee.canceled"
+  | "invitee_no_show.created"
+  | "invitee_no_show.deleted"
+  | "routing_form_submission.created";
   created_at: string;
   created_by: string;
   payload: InviteePayload;

@@ -209,8 +209,6 @@ export const withLogging = async <T>(
       const unexpectedError = new CalIntError(
         error instanceof Error ? error.message : String(error),
         "UNEXPECTED_ERROR",
-        false,
-        { originalError: error },
       );
 
       logMessage(logger, "error", `Unexpected error in ${operationName}`, {
