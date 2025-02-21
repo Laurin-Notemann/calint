@@ -89,11 +89,9 @@ export class CalendlyController {
           user.resource.current_organization,
           user.resource.uri,
         );
-        if (webhookError && !webhookError.context?.response.title.includes("Already exists")) {
-          this.logger.warn(JSON.stringify(webhookError))
-          this.logger.warn(webhookError.context?.response.title)
+        if (webhookError && !webhookError.context?.response.title.includes("Already Exists"))
           throw webhookError;
-        }
+
 
         if (!dbUserGl)
           throw new CalIntError("dbUserGl was not set", "DB_USER_GL_NOT_SET");
