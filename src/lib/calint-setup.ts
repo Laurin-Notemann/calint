@@ -73,18 +73,9 @@ export class CalintSetup {
         return {
           id: res.pipedriveActivity.pipedriveId,
           header: res.pipedriveActivity.name,
-          join_meeting: {
-            markdown: true,
-            value: `[Join Meeting now](${res.calendlyEvent.joinUrl})`, // TODO: The string could be empty, possibly add an error text here
-          },
-          reschedule_meeting: {
-            markdown: true,
-            value: `[Reschedule the meeting](${res.calendlyEvent.rescheduleUrl})`,
-          },
-          cancel_meeting: {
-            markdown: true,
-            value: `[Cancel the meeting](${res.calendlyEvent.cancelUrl})`,
-          },
+          join_meeting: res.calendlyEvent.joinUrl, // TODO: The string could be empty, possibly add an error text here
+          reschedule_meeting: res.calendlyEvent.rescheduleUrl,
+          cancel_meeting: res.calendlyEvent.cancelUrl
         };
       }),
     };

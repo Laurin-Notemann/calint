@@ -11,18 +11,9 @@ export type JsonPanel = {
   data: {
     id: number;
     header: string;
-    join_meeting: {
-      markdown: boolean;
-      value: string;
-    };
-    cancel_meeting: {
-      markdown: boolean;
-      value: string;
-    };
-    reschedule_meeting: {
-      markdown: boolean;
-      value: string;
-    };
+    join_meeting: string;
+    cancel_meeting: string;
+    reschedule_meeting: string;
   }[];
 };
 
