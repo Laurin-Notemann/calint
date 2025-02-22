@@ -554,7 +554,7 @@ export class PipedriveController {
                 due_time: formattedDueTime,
                 duration: formattedDuration,
                 deal_id: deal.pipedriveId,
-                owner_id: user.id,
+                //owner_id: user.id,
                 participants: [
                   {
                     person_id: person.pipedriveId,
