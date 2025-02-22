@@ -26,7 +26,7 @@ const SetupFrame = ({
         mappings,
         eventTypeId: selectedEventType.id,
       };
-      const res = await fetch(
+      await fetch(
         env.NEXT_PUBLIC_BASE_URL + "/api/v1/mapping/create?userId=" + userId,
         {
           method: "POST",

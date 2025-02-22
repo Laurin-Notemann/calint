@@ -66,6 +66,7 @@ export class PipedriveController {
   async getActivityByPipedriveDealId(dealId: number): PromiseReturn<any> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         if (!this.config) {
           throw new CalIntError(
@@ -107,6 +108,7 @@ export class PipedriveController {
   ): PromiseReturn<any> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         if (!this.configV2) {
           throw new CalIntError(
@@ -167,6 +169,7 @@ export class PipedriveController {
   ): PromiseReturn<PipedriveDeal> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         if (payload.tracking.salesforce_uuid) {
           const dealId = parseInt(payload.tracking.salesforce_uuid);
@@ -202,6 +205,7 @@ export class PipedriveController {
   ): PromiseReturn<PipedriveDeal> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         if (!this.configV2) {
           throw new CalIntError(
@@ -271,7 +275,15 @@ export class PipedriveController {
   ): PromiseReturn<PipedriveDeal> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
+        if (!this.configV2) {
+          throw new CalIntError(
+            ERROR_MESSAGES.CONFIG_NOT_SET,
+            "CONFIG_NOT_SET",
+          );
+        }
+
         const [errDbDeal, dbDeal] = await this.querier.getPipedriveDealByDealId(
           companyId,
           dealId,
@@ -281,13 +293,6 @@ export class PipedriveController {
         }
 
         if (errDbDeal && errDbDeal.code === "PIPEDRIVE_DEAL_NOT_FOUND") {
-          if (!this.configV2) {
-            throw new CalIntError(
-              ERROR_MESSAGES.CONFIG_NOT_SET,
-              "CONFIG_NOT_SET",
-            );
-          }
-
           const api = new DealsApi(this.configV2);
 
           const res = await api.getDeal({
@@ -347,6 +352,7 @@ export class PipedriveController {
   ): PromiseReturn<PipedrivePerson> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         if (!this.config) {
           throw new CalIntError(
@@ -423,7 +429,15 @@ export class PipedriveController {
   ): PromiseReturn<PipedrivePerson> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
+        if (!this.configV2) {
+          throw new CalIntError(
+            ERROR_MESSAGES.CONFIG_NOT_SET,
+            "CONFIG_NOT_SET",
+          );
+        }
+
         const [errDbPerson, dbPerson] =
           await this.querier.getPipedrivePersonByEmail(companyId, email);
         if (errDbPerson && errDbPerson.code !== "PIPEDRIVE_PERSON_NOT_FOUND") {
@@ -431,13 +445,6 @@ export class PipedriveController {
         }
 
         if (errDbPerson && errDbPerson.code === "PIPEDRIVE_PERSON_NOT_FOUND") {
-          if (!this.configV2) {
-            throw new CalIntError(
-              ERROR_MESSAGES.CONFIG_NOT_SET,
-              "CONFIG_NOT_SET",
-            );
-          }
-
           const api = new PersonsApi(this.configV2);
 
           const res = await api.searchPersons({
@@ -504,6 +511,7 @@ export class PipedriveController {
   ): PromiseReturn<PipedriveActivity> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         if (!this.configV2) {
           throw new CalIntError(
@@ -598,6 +606,7 @@ export class PipedriveController {
   async getAndSaveActivityTypes(userId: number, companyId: string) {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         if (!this.config) {
           throw new CalIntError(
@@ -649,6 +658,7 @@ export class PipedriveController {
   async triggerTokenUpdate(userId: number): PromiseReturn<void> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         this.userId = userId;
         await this.updateConfig();
@@ -665,6 +675,7 @@ export class PipedriveController {
   ): PromiseReturn<GetCurrentUserResponseAllOfData> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         let res;
         try {
@@ -678,13 +689,13 @@ export class PipedriveController {
           );
         }
 
-        const [configErr, _] = await this.updateConfig(res);
+        const [configErr] = await this.updateConfig(res);
         if (configErr) throw configErr;
 
         const [err, user] = await this.getUser();
         if (err) throw err;
 
-        const [saveErr, __] = await this.saveUserToDB(user);
+        const [saveErr] = await this.saveUserToDB(user);
         if (saveErr) throw saveErr;
 
         return user;
@@ -701,6 +712,7 @@ export class PipedriveController {
   ): PromiseReturn<GetCurrentUserResponseAllOfData> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         if (!this.tokens) {
           throw new CalIntError(
@@ -717,13 +729,13 @@ export class PipedriveController {
         if (checkUserErr) throw checkUserErr;
 
         if (exUser.length > 0) {
-          const [err, _] = await this.querier.loginWithPipedrive(
+          const [err] = await this.querier.loginWithPipedrive(
             user.id!,
             this.tokens,
           );
           if (err) throw err;
         } else {
-          const [err, _] = await this.querier.createUser(user, this.tokens);
+          const [err] = await this.querier.createUser(user, this.tokens);
           if (err) throw err;
         }
 
@@ -739,6 +751,7 @@ export class PipedriveController {
   async getUserByEmail(email: string): PromiseReturn<BaseUser> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         if (!this.config) {
           throw new CalIntError(
@@ -781,6 +794,7 @@ export class PipedriveController {
   async getUser(): PromiseReturn<GetCurrentUserResponseAllOfData> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         if (!this.config) {
           throw new CalIntError(
@@ -816,6 +830,7 @@ export class PipedriveController {
   private async setTokenFromDB(): PromiseReturn<boolean> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         if (!this.userId) {
           throw new CalIntError(
@@ -849,6 +864,7 @@ export class PipedriveController {
   private async updateConfig(tokens?: TokenResponse): PromiseReturn<boolean> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         if (tokens) {
           this.tokens = { ...tokens };
@@ -856,7 +872,7 @@ export class PipedriveController {
           this.oauth2.updateToken(tokens);
           this.oauth2V2.updateToken(tokens);
         } else {
-          const [err, _] = await this.setTokenFromDB();
+          const [err] = await this.setTokenFromDB();
           if (err) throw err;
 
           this.oauth2.updateToken(this.tokens!);

@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     querier,
   );
 
-  const [err, _] = await calintSetup.handleCalendlyWebhook(body);
+  const [err] = await calintSetup.handleCalendlyWebhook(body);
 
   if (err) {
     logMessage(logger, "error", err.message);

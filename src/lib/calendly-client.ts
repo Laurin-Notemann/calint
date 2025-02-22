@@ -54,7 +54,7 @@ export class CalendlyClient {
     const makeRequestLogic = async () => {
       if (requiresAuth && !isAuthEndpoint && !skipTokenRefresh) {
         const [refreshErr] = await this.refreshAccessToken();
-        if (refreshErr) throw refreshErr
+        if (refreshErr) throw refreshErr;
       }
 
       const baseUrl = isAuthEndpoint ? this.authUrl : this.baseUrl;
@@ -109,18 +109,22 @@ export class CalendlyClient {
 
     if (skipLogging) {
       return makeRequestLogic().then(
-        data => Promise.resolve([null, data] as const) as PromiseReturn<T>,
-        error => Promise.resolve([
-          error instanceof CalIntError ? error : new CalIntError(
-            error instanceof Error ? error.message : String(error),
-            "UNEXPECTED_ERROR"
-          ),
-          null
-        ] as const) as PromiseReturn<T>
+        (data) => Promise.resolve([null, data] as const) as PromiseReturn<T>,
+        (error) =>
+          Promise.resolve([
+            error instanceof CalIntError
+              ? error
+              : new CalIntError(
+                  error instanceof Error ? error.message : String(error),
+                  "UNEXPECTED_ERROR",
+                ),
+            null,
+          ] as const) as PromiseReturn<T>,
       );
     } else {
       return withLogging(
         this.logger,
+        "info",
         makeRequestLogic,
         `makeRequest_${endpoint}`,
         "api",
@@ -150,12 +154,12 @@ export class CalendlyClient {
   async refreshAccessToken(): PromiseReturn<GetAccessTokenRes | null> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const now = Date.now();
         if (now - this.lastTokenRefresh < this.TOKEN_REFRESH_INTERVAL) {
           return null;
         }
-
 
         const [err, data] = await this.makeRequest<GetAccessTokenRes>(
           "/oauth/token",
@@ -182,7 +186,7 @@ export class CalendlyClient {
           data.owner,
           credentials,
         );
-        if (dbErr) throw dbErr
+        if (dbErr) throw dbErr;
 
         this.updateCalendlyTokens(data);
         this.organization = data.organization;
@@ -505,11 +509,11 @@ interface GetOrganizationMembershipResponse {
 
 export type WebhookPayload = {
   event:
-  | "invitee.created"
-  | "invitee.canceled"
-  | "invitee_no_show.created"
-  | "invitee_no_show.deleted"
-  | "routing_form_submission.created";
+    | "invitee.created"
+    | "invitee.canceled"
+    | "invitee_no_show.created"
+    | "invitee_no_show.deleted"
+    | "routing_form_submission.created";
   created_at: string;
   created_by: string;
   payload: InviteePayload;

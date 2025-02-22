@@ -12,7 +12,6 @@ import createLogger, {
 } from "@/utils/logger";
 import { NewCalEventType, User } from "@/db/schema";
 import dayjs from "dayjs";
-import { NextRequest } from "next/server";
 
 export class CalendlyController {
   private logger = createLogger("CalendlyController");
@@ -28,6 +27,7 @@ export class CalendlyController {
   async callback(code: string, pipedriveId: number) {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         this.calClient = new CalendlyClient({}); // important need new client for every request
 
@@ -89,9 +89,11 @@ export class CalendlyController {
           user.resource.current_organization,
           user.resource.uri,
         );
-        if (webhookError && !webhookError.context?.response.title.includes("Already Exists"))
+        if (
+          webhookError &&
+          !webhookError.context?.response.title.includes("Already Exists")
+        )
           throw webhookError;
-
 
         if (!dbUserGl)
           throw new CalIntError("dbUserGl was not set", "DB_USER_GL_NOT_SET");
@@ -124,6 +126,7 @@ export class CalendlyController {
   ): PromiseReturn<void> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         this.calClient = new CalendlyClient({
           accessToken,
@@ -140,10 +143,11 @@ export class CalendlyController {
   private checkClientInitialized(): PromiseReturn<CalendlyClient> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         if (!this.calClient) {
           throw new CalIntError(
-            "CLIENT_NOT_INITIALIZED",
+            ERROR_MESSAGES.CLIENT_NOT_INITIALIZED,
             "CLIENT_NOT_INITIALIZED",
           );
         }
@@ -162,17 +166,18 @@ export class CalendlyController {
   ): PromiseReturn<NewCalEventType> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         if (!eventType.name) {
           throw new CalIntError(
-            "EVENT_TYPE_NAME_REQUIRED",
+            ERROR_MESSAGES.EVENT_TYPE_NAME_REQUIRED,
             "EVENT_TYPE_NAME_REQUIRED",
           );
         }
 
         if (!calUserUri && !calUsername && !eventType.profile) {
           throw new CalIntError(
-            "MISSING_USER_OR_PROFILE_INFO",
+            ERROR_MESSAGES.MISSING_USER_OR_PROFILE_INFO,
             "MISSING_USER_OR_PROFILE_INFO",
           );
         }
@@ -200,8 +205,9 @@ export class CalendlyController {
   ): PromiseReturn<void> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
-        const [error, result] = await this.querier.addAllEventTypes(eventTypes);
+        const [error] = await this.querier.addAllEventTypes(eventTypes);
         if (error) throw error;
         return undefined;
       },
@@ -218,18 +224,13 @@ export class CalendlyController {
   ): PromiseReturn<GetEventTypesResponse> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const [clientErr, client] = await this.checkClientInitialized();
         if (clientErr) throw clientErr;
 
         const [eventTypesErr, eventTypes] = await client.getAllEventTypes();
-        if (eventTypesErr)
-          throw new CalIntError(
-            "CALENDLY_API_ERROR",
-            "CALENDLY_API_ERROR",
-            false,
-            { originalError: eventTypesErr },
-          );
+        if (eventTypesErr) throw eventTypesErr;
 
         const dbEventTypes: NewCalEventType[] = [];
         for (const et of eventTypes.collection) {
@@ -237,24 +238,12 @@ export class CalendlyController {
             et,
             companyId,
           );
-          if (mapErr)
-            throw new CalIntError(
-              "EVENT_TYPE_MAPPING_ERROR",
-              "EVENT_TYPE_MAPPING_ERROR",
-              false,
-              { originalError: mapErr },
-            );
+          if (mapErr) throw mapErr;
           dbEventTypes.push(dbEventType);
         }
 
         const [saveErr] = await this.saveEventTypes(dbEventTypes, userId);
-        if (saveErr)
-          throw new CalIntError(
-            "EVENT_TYPE_SAVE_ERROR",
-            "EVENT_TYPE_SAVE_ERROR",
-            false,
-            { originalError: saveErr },
-          );
+        if (saveErr) throw saveErr;
 
         return eventTypes;
       },
@@ -268,18 +257,13 @@ export class CalendlyController {
   private getUsers(): PromiseReturn<{ uri: string; name: string }[]> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const [clientErr, client] = await this.checkClientInitialized();
         if (clientErr) throw clientErr;
 
         const [err, res] = await client.getOrganizationMemberships();
-        if (err)
-          throw new CalIntError(
-            "USER_RETRIEVAL_ERROR",
-            "USER_RETRIEVAL_ERROR",
-            false,
-            { originalError: err },
-          );
+        if (err) throw err;
 
         return res.collection.map((m) => ({
           uri: m.user.uri,
@@ -297,6 +281,7 @@ export class CalendlyController {
   ): PromiseReturn<boolean> {
     return withLogging(
       this.logger,
+      "trace",
       async () => {
         const [clientErr, client] = await this.checkClientInitialized();
         if (clientErr) throw clientErr;
@@ -308,13 +293,7 @@ export class CalendlyController {
           const [eventErr, eventTypes] = await client.getEventTypesByUserId(
             user.uri,
           );
-          if (eventErr)
-            throw new CalIntError(
-              "CALENDLY_API_ERROR",
-              "CALENDLY_API_ERROR",
-              false,
-              { originalError: eventErr },
-            );
+          if (eventErr) throw eventErr;
 
           const dbEventTypes: NewCalEventType[] = await Promise.all(
             eventTypes.collection.map(async (et) => {
@@ -324,13 +303,7 @@ export class CalendlyController {
                 user.uri,
                 user.name,
               );
-              if (mapErr)
-                throw new CalIntError(
-                  "EVENT_TYPE_MAPPING_ERROR",
-                  "EVENT_TYPE_MAPPING_ERROR",
-                  false,
-                  { originalError: mapErr },
-                );
+              if (mapErr) throw mapErr;
               return dbEventType;
             }),
           );
@@ -344,13 +317,7 @@ export class CalendlyController {
 
         const uniqueEventTypes = Array.from(this.eventTypeMap.values());
         const [saveErr] = await this.saveEventTypes(uniqueEventTypes, userId);
-        if (saveErr)
-          throw new CalIntError(
-            "EVENT_TYPE_SAVE_ERROR",
-            "EVENT_TYPE_SAVE_ERROR",
-            false,
-            { originalError: saveErr },
-          );
+        if (saveErr) throw saveErr;
 
         return true;
       },

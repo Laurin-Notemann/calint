@@ -73,6 +73,7 @@ export class CalintSetup {
   async createMapping(userId: number, request: NextRequest) {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const [getUserErr, user] =
           await this.querier.getUserAndCalendlyAcc(userId);
@@ -112,6 +113,7 @@ export class CalintSetup {
   async getJsonPanelData(userId: number, dealId: number) {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const [getUserErr, user] =
           await this.querier.getUserAndCalendlyAcc(userId);
@@ -152,14 +154,46 @@ export class CalintSetup {
     );
   }
 
+  async getAuthenticatedPiperiveUser(email: string, eventTypeUri: string) {
+    return withLogging(
+      this.logger,
+      "info",
+      async () => {
+        const [_, user] =
+          await this.querier.getUserAndCalendlyAccByCalendlyEmail(email);
+        if (user) return user;
+
+        const [err, company] =
+          await this.querier.getCompanyByEventTypeUri(eventTypeUri);
+        if (err) throw err;
+
+        const [errGetUsers, users] = await this.querier.getAllUsersByCompanyId(
+          company.id,
+        );
+        if (errGetUsers) throw errGetUsers;
+
+        return users[0];
+      },
+      "getAuthenticatedPiperiveUser",
+      "general",
+      undefined,
+      { email, eventTypeUri },
+    );
+  }
+
   async handleCalendlyWebhook(body: WebhookPayload) {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const email =
           body.payload.scheduled_event.event_memberships[0].user_email;
-        const [getUserErr, user] =
-          await this.querier.getUserAndCalendlyAccByCalendlyEmail(email);
+        const eventTypeUri = body.payload.scheduled_event.event_type;
+
+        const [getUserErr, user] = await this.getAuthenticatedPiperiveUser(
+          email,
+          eventTypeUri,
+        );
         if (getUserErr) throw getUserErr;
 
         const pipedriveUser = user.users;
@@ -273,6 +307,7 @@ export class CalintSetup {
   ) {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const newEvent: NewCalendlyEvent = {
           uri: payload.uri,
@@ -334,6 +369,7 @@ export class CalintSetup {
   ) {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const [errGetEvent, dbEventGet] = await this.querier.getEventByUri(
           payload.uri,
@@ -362,6 +398,7 @@ export class CalintSetup {
   async getAndSaveAllEventTypesAndActivityTypes(userId: number) {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const [getUserErr, user] =
           await this.querier.getUserAndCalendlyAcc(userId);

@@ -8,9 +8,11 @@ export const createLogger = (name: string): Logger => {
   return defaultLogger.child({ module: name });
 };
 
+type LogLevel = "trace" | "debug" | "info" | "warn" | "error";
+
 export const logMessage = (
   logger: Logger,
-  level: "info" | "error",
+  level: LogLevel,
   message: string,
   context?: object,
 ) => {
@@ -157,6 +159,7 @@ const createLogContext = (
 
 export const withLogging = async <T>(
   logger: Logger,
+  logLevel: LogLevel,
   operation: Operation<T>,
   operationName: string,
   logType: LogType,
@@ -172,7 +175,7 @@ export const withLogging = async <T>(
   );
 
   try {
-    logMessage(logger, "info", `Starting ${operationName}`, {
+    logMessage(logger, logLevel, `Starting ${operationName}`, {
       type: `${logType}_operation`,
       ...logContext,
     });
@@ -180,7 +183,7 @@ export const withLogging = async <T>(
     const result = await operation(...args);
 
     const duration = Date.now() - startTime;
-    logMessage(logger, "info", `Successfully completed ${operationName}`, {
+    logMessage(logger, logLevel, `Successfully completed ${operationName}`, {
       type: `${logType}_operation`,
       ...logContext,
       duration,

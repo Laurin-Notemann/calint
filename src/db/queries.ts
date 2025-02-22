@@ -58,6 +58,7 @@ export class DatabaseQueries {
   > {
     return withLogging(
       this.logger,
+      "info",
       () => {
         const activityIds = activities.map((activity) => activity.id);
 
@@ -95,6 +96,7 @@ export class DatabaseQueries {
   ): PromiseReturn<CalendlyEvent> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const updatedEvent = await db
           .update(calendlyEvents)
@@ -123,6 +125,7 @@ export class DatabaseQueries {
   ): PromiseReturn<PipedriveActivity> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const updatedActivity = await db
           .update(pipedriveActivities)
@@ -149,6 +152,7 @@ export class DatabaseQueries {
   async getPipedriveActivityByEventId(eventId: string) {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const activity = await db
           .select()
@@ -179,6 +183,7 @@ export class DatabaseQueries {
   async getPipedriveActivityById(id: string) {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const activity = await db
           .select()
@@ -204,6 +209,7 @@ export class DatabaseQueries {
   async getPipedriveActivityTypeById(id: string) {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const activityType = await db
           .select()
@@ -229,6 +235,7 @@ export class DatabaseQueries {
   async getPipedriveDealByPersonId(companyId: string, personId: string) {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const deal = await db
           .select()
@@ -265,6 +272,7 @@ export class DatabaseQueries {
   async getPipedriveDealByDealId(companyId: string, dealId: number) {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const deal = await db
           .select()
@@ -301,6 +309,7 @@ export class DatabaseQueries {
   async getPipedrivePersonById(id: string) {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const person = await db
           .select()
@@ -329,6 +338,7 @@ export class DatabaseQueries {
   ) {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const person = await db
           .select()
@@ -365,6 +375,7 @@ export class DatabaseQueries {
   async getPipedrivePersonByEmail(companyId: string, email: string) {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const person = await db
           .select()
@@ -401,6 +412,7 @@ export class DatabaseQueries {
   async createPipedriveDeal(newDeal: NewPipedriveDeal) {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const deal = await db
           .insert(pipedriveDeals)
@@ -426,6 +438,7 @@ export class DatabaseQueries {
   async createPipedrivePerson(newPerson: NewPipedrivePerson) {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const person = await db
           .insert(pipedrivePeople)
@@ -453,6 +466,7 @@ export class DatabaseQueries {
   ): PromiseReturn<CalendlyEvent> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const calendlyEvent = await db
           .insert(calendlyEvents)
@@ -480,6 +494,7 @@ export class DatabaseQueries {
   ): PromiseReturn<PipedriveActivity> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const activity = await db
           .insert(pipedriveActivities)
@@ -505,6 +520,7 @@ export class DatabaseQueries {
   async getEventByUri(uri: string): PromiseReturn<CalendlyEvent> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const event = await db
           .select()
@@ -536,6 +552,7 @@ export class DatabaseQueries {
   async getEventTypeByUri(uri: string): PromiseReturn<CalEventType> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const eventType = await db
           .select()
@@ -563,6 +580,7 @@ export class DatabaseQueries {
   ): PromiseReturn<TypeMappingType[]> {
     return withLogging(
       this.logger,
+      "info",
       () => {
         return db
           .select()
@@ -588,6 +606,7 @@ export class DatabaseQueries {
   ): PromiseReturn<TypeMappingType | null> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const mapping = await db
           .select()
@@ -617,6 +636,7 @@ export class DatabaseQueries {
   ): PromiseReturn<TypeMappingType> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const updatedMapping = await db
           .update(eventActivityTypesMapping)
@@ -654,6 +674,7 @@ export class DatabaseQueries {
   ): PromiseReturn<TypeMappingType> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const newMapping = await db
           .insert(eventActivityTypesMapping)
@@ -681,6 +702,7 @@ export class DatabaseQueries {
   ): PromiseReturn<TypeMappingType> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const [existingMappingError, existingMapping] =
           await this.getTypeMapping(
@@ -714,6 +736,7 @@ export class DatabaseQueries {
   ): PromiseReturn<TypeMappingType[]> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         return await db
           .select()
@@ -730,6 +753,7 @@ export class DatabaseQueries {
   async getAllEventTypes(companyId: string): PromiseReturn<CalEventType[]> {
     return withLogging(
       this.logger,
+      "info",
       () => {
         return db
           .select()
@@ -748,6 +772,7 @@ export class DatabaseQueries {
   ): PromiseReturn<PipedriveActivityType[]> {
     return withLogging(
       this.logger,
+      "info",
       () => {
         return db
           .select()
@@ -766,6 +791,7 @@ export class DatabaseQueries {
   ): PromiseReturn<{ message: string; added: number; skipped?: number }> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const [checkError, result] =
           await this.checkExistingEventTypes(eventTypes);
@@ -803,6 +829,7 @@ export class DatabaseQueries {
   }> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const existingTypes = await db
           .select()
@@ -837,6 +864,7 @@ export class DatabaseQueries {
   ): PromiseReturn<{ message: string; added: number; skipped?: number }> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const [checkError, result] =
           await this.checkExistingActivityTypes(activityTypes);
@@ -876,6 +904,7 @@ export class DatabaseQueries {
   }> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const existingTypes = await db
           .select()
@@ -908,9 +937,37 @@ export class DatabaseQueries {
     );
   }
 
+  async getAllUsersByCompanyId(id: string): PromiseReturn<UserCalendly[]> {
+    return withLogging(
+      this.logger,
+      "info",
+      async () => {
+        const user = await db
+          .select()
+          .from(users)
+          .innerJoin(calendlyAccs, eq(users.id, calendlyAccs.userId))
+          .where(eq(users.companyId, id));
+
+        if (user.length === 0) {
+          throw new CalIntError(
+            ERROR_MESSAGES.USER_NOT_FOUND,
+            "USER_NOT_FOUND",
+          );
+        }
+
+        return user;
+      },
+      "getAllUsersByCompanyId",
+      "db",
+      undefined,
+      { companyId: id },
+    );
+  }
+
   async getUser(userId: number): PromiseReturn<User> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const user = await db.select().from(users).where(eq(users.id, userId));
 
@@ -935,6 +992,7 @@ export class DatabaseQueries {
   ): PromiseReturn<UserCalendly> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const res = await db
           .select()
@@ -961,6 +1019,7 @@ export class DatabaseQueries {
   async getUserAndCalendlyAcc(userId: number): PromiseReturn<UserCalendly> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const res = await db
           .select()
@@ -987,6 +1046,7 @@ export class DatabaseQueries {
   async getCompanyById(companyId: string): PromiseReturn<Company> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const company = await db
           .select()
@@ -1014,9 +1074,36 @@ export class DatabaseQueries {
     );
   }
 
+  async getCompanyByEventTypeUri(eventTypeUri: string) {
+    return withLogging(
+      this.logger,
+      "info",
+      async () => {
+        const company = await db
+          .select()
+          .from(companies)
+          .innerJoin(calEventTypes, eq(calEventTypes.companyId, companies.id))
+          .where(eq(calEventTypes.uri, eventTypeUri));
+
+        if (company.length !== 1)
+          throw new CalIntError(
+            ERROR_MESSAGES.COMPANY_NOT_FOUND,
+            "COMPANY_NOT_FOUND",
+          );
+
+        return company[0].companies;
+      },
+      "getCompanyByCalendlyOrgUri",
+      "db",
+      undefined,
+      { orgUri: eventTypeUri },
+    );
+  }
+
   async getCompany(companyDomain: string): PromiseReturn<Company> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const company = await db
           .select()
@@ -1047,6 +1134,7 @@ export class DatabaseQueries {
   async createCompany(companyValues: NewCompany): PromiseReturn<Company> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const company = await db
           .insert(companies)
@@ -1074,6 +1162,7 @@ export class DatabaseQueries {
   ): PromiseReturn<Company> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const [error, company] = await this.getCompany(companyValues.domain);
 
@@ -1105,6 +1194,7 @@ export class DatabaseQueries {
   async updateCompany(company: Company): PromiseReturn<Company> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const updatedCompany = await db
           .update(companies)
@@ -1141,6 +1231,7 @@ export class DatabaseQueries {
   ): PromiseReturn<boolean> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         if (!user.id || !user.name) {
           throw new CalIntError(
@@ -1195,6 +1286,7 @@ export class DatabaseQueries {
   ): PromiseReturn<boolean> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         await db.update(users).set(logins).where(eq(users.id, pipedriveAccId));
         return true;
@@ -1213,6 +1305,7 @@ export class DatabaseQueries {
   ): PromiseReturn<User> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         await db.insert(calendlyAccs).values({
           userId,
@@ -1245,6 +1338,7 @@ export class DatabaseQueries {
   ): PromiseReturn<User | null> {
     return withLogging(
       this.logger,
+      "info",
       async () => {
         const formattedCreds = {
           ...creds,
@@ -1280,6 +1374,7 @@ export class DatabaseQueries {
   async checkUserExists(userId: number): PromiseReturn<User[]> {
     return withLogging(
       this.logger,
+      "info",
       () => {
         return db.select().from(users).where(eq(users.id, userId));
       },
@@ -1293,6 +1388,7 @@ export class DatabaseQueries {
   async checkCalendlyUserExist(userId: number): PromiseReturn<any[]> {
     return withLogging(
       this.logger,
+      "info",
       () => {
         return db
           .select()

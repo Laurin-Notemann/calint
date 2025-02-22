@@ -1,10 +1,7 @@
 "use client"; // This is required since we need interactivity【2-5】
 
 import { useEffect } from "react";
-import AppExtensionsSDK, {
-  Command,
-  Modal,
-} from "@pipedrive/app-extensions-sdk";
+import AppExtensionsSDK from "@pipedrive/app-extensions-sdk";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +10,7 @@ export default function PipedriveFrame() {
     // Initialize Pipedrive SDK
     const initializePipedrive = async () => {
       try {
-        const sdk = await new AppExtensionsSDK().initialize();
+        await new AppExtensionsSDK().initialize();
         // You can access Pipedrive context here
         //const settings = sdk.userSettings;
         //console.log('Pipedrive context:', settings);
