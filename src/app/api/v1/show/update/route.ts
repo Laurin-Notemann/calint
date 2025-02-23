@@ -3,7 +3,7 @@ import { CalendlyController } from "@/lib/calendly/calendly-controller";
 import { CalintSetup } from "@/lib/calint-setup";
 import { PipedriveController } from "@/lib/pipedrive/pipedrive-controller";
 import createLogger, { logMessage } from "@/utils/logger";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 const logger = createLogger("update-show-status");
 
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     querier,
   );
 
-  const [err, res] = await calintSetup.createMapping(userId, request);
+  const [err, res] = await calintSetup.updateShowStatus(request);
   if (err) {
     logMessage(logger, "error", err.message);
     return NextResponse.json(
@@ -32,6 +32,6 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json(
     { success: true, error: null, data: JSON.stringify(res) },
-    { status: 201 },
+    { status: 200 },
   );
 }
