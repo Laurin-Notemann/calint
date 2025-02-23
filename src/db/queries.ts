@@ -149,6 +149,48 @@ export class DatabaseQueries {
     );
   }
 
+  async getPipedriveActivityByDealIdAndPipedriveId(
+    dealId: number,
+    companyId: string,
+    id: number,
+  ) {
+    return withLogging(
+      this.logger,
+      "info",
+      async () => {
+        const activity = await db
+          .select()
+          .from(pipedriveActivities)
+          .innerJoin(
+            pipedriveDeals,
+            and(
+              eq(pipedriveDeals.id, pipedriveActivities.pipedriveDealId),
+              eq(pipedriveDeals.companyId, companyId),
+              eq(pipedriveDeals.pipedriveId, dealId),
+            ),
+          )
+          .where(eq(pipedriveActivities.pipedriveId, id))
+          .innerJoin(
+            calendlyEvents,
+            eq(calendlyEvents.id, pipedriveActivities.calendlyEventId),
+          );
+
+        if (activity.length !== 1) {
+          throw new CalIntError(
+            ERROR_MESSAGES.PIPEDRIVE_ACTIVITY_NOT_FOUND,
+            "PIPEDRIVE_ACTIVITY_NOT_FOUND",
+          );
+        }
+
+        return activity[0];
+      },
+      "getPipedriveActivityByDealIdAndPipedriveId",
+      "db",
+      undefined,
+      { dealId, companyId, id },
+    );
+  }
+
   async getPipedriveActivityByEventId(eventId: string) {
     return withLogging(
       this.logger,
@@ -572,6 +614,36 @@ export class DatabaseQueries {
       "db",
       undefined,
       { uri },
+    );
+  }
+
+  async getTypeMappingsByActivityId(
+    companyId: string,
+    pipedriveActivityId: number,
+  ) {
+    return withLogging(
+      this.logger,
+      "info",
+      () => {
+        return db
+          .select()
+          .from(eventActivityTypesMapping)
+          .innerJoin(
+            pipedriveActivities,
+            and(
+              eq(pipedriveActivities.pipedriveId, pipedriveActivityId),
+              eq(
+                pipedriveActivities.id,
+                eventActivityTypesMapping.pipedriveActivityTypeId,
+              ),
+            ),
+          )
+          .where(eq(eventActivityTypesMapping.companyId, companyId));
+      },
+      "getTypeMapping",
+      "db",
+      undefined,
+      { companyId, pipedriveActivityId },
     );
   }
 

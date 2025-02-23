@@ -1,4 +1,4 @@
-import { DatabaseQueries } from "@/db/queries";
+import { DatabaseQueries, querier } from "@/db/queries";
 import { CalendlyController } from "./calendly/calendly-controller";
 import createLogger, {
   withLogging,
@@ -20,6 +20,7 @@ import { JsonPanel } from "@/app/api/v1/jsonpipedrive/route";
 import { MappingsRequestBody } from "@/app/api/v1/mapping/create/route";
 import { MappingSelections } from "@/components/pipedrive-setup";
 import { NextRequest } from "next/server";
+import { ShowMutation } from "@/app/pipedrive-frame/side-panel/page";
 
 export type SettingsDataRes = {
   data: {
@@ -43,6 +44,73 @@ export class CalintSetup {
     this.calendlyController = calendlyController;
     this.querier = querier;
     this.pipedriveController = pipedriveController;
+  }
+
+  async updateShowStatus(request: NextRequest) {
+    return withLogging(
+      this.logger,
+      "info",
+      async () => {
+        const { userId, show, activityId, dealId }: ShowMutation =
+          await request.json();
+
+        const [err, user] = await this.querier.getUser(userId);
+        if (err) throw err;
+
+        await this.pipedriveController.triggerTokenUpdate(user.id);
+
+        if (show) {
+          const [errUpdateActivity] =
+            await this.pipedriveController.updateActivityShow(activityId);
+          if (errUpdateActivity) throw errUpdateActivity;
+          return true;
+        }
+
+        const [errCompany, company] = await this.querier.getCompanyById(
+          user.companyId,
+        );
+        if (errCompany) throw errCompany;
+
+        const [errMapping, dbMapping] =
+          await this.querier.getTypeMappingsByActivityId(
+            company.id,
+            activityId,
+          );
+
+        if (errMapping) throw errMapping;
+
+        const noshowMapping = dbMapping.find(
+          (mapping) => mapping.event_activity_types_mapping.type === "noshow",
+        );
+        if (!noshowMapping) {
+          throw new CalIntError(
+            ERROR_MESSAGES.NO_CREATE_MAPPING_FOUND,
+            "NO_CREATE_MAPPING_FOUND",
+            true,
+          );
+        }
+
+        const [errUpdateActivity, dbEvent] =
+          await this.pipedriveController.updateActivityNoShow(
+            activityId,
+            dealId,
+            company.id,
+            noshowMapping.event_activity_types_mapping,
+          );
+        if (errUpdateActivity) throw errUpdateActivity;
+
+        dbEvent.status = "noshow";
+
+        const [errUpdate] = await this.querier.updateCalendlyEvent(dbEvent);
+        if (errUpdate) throw errUpdate;
+
+        return true;
+      },
+      "updateShowStatus",
+      "general",
+      undefined,
+      { request },
+    );
   }
 
   remapMappingsToNewTypeMappingType(

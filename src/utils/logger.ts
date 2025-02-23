@@ -80,6 +80,7 @@ export const ERROR_MESSAGES = {
   USER_RETRIEVAL_ERROR: "Error occurred while retrieving Calendly users.",
   SHARED_EVENT_TYPES_ERROR: "Error occurred while finding shared event types.",
   NO_CREATE_MAPPING_FOUND: "No create mapping found for the event type.",
+  NO_NO_SHOW_MAPPING_FOUND: "No noshow mapping found for the activity.",
   NO_CANCELLED_MAPPING_FOUND: "No cancelled mapping found for the event type.",
   NO_RESCHEDULED_MAPPING_FOUND:
     "No rescheduled mapping found for the event type.",

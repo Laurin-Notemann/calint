@@ -102,6 +102,116 @@ export class PipedriveController {
     );
   }
 
+  async updateActivityShow(activityId: number) {
+    return withLogging(
+      this.logger,
+      "info",
+      async () => {
+        if (!this.configV2) {
+          throw new CalIntError(
+            ERROR_MESSAGES.CONFIG_NOT_SET,
+            "CONFIG_NOT_SET",
+          );
+        }
+
+        const api = new ActivitiesApi(this.configV2);
+
+        const res = await api.updateActivity({
+          id: activityId,
+          AddActivityRequest: {
+            done: true,
+          },
+        });
+
+        if (!res.success || !res.data) {
+          throw new CalIntError(
+            ERROR_MESSAGES.PIPEDRIVE_ACTIVITY_UPDATE_FAILED,
+            "PIPEDRIVE_ACTIVITY_UPDATE_FAILED",
+          );
+        }
+
+        return res.data;
+      },
+      "updateActivityShow",
+      "api",
+      {
+        service: "Pipedrive",
+        method: "PATCH",
+        endpoint: `/api/v2/activities/{id}`,
+      },
+      { activityId },
+    );
+  }
+
+  async updateActivityNoShow(
+    activityId: number,
+    dealId: number,
+    companyId: string,
+    mapping: TypeMappingType,
+  ) {
+    return withLogging(
+      this.logger,
+      "info",
+      async () => {
+        if (!this.configV2) {
+          throw new CalIntError(
+            ERROR_MESSAGES.CONFIG_NOT_SET,
+            "CONFIG_NOT_SET",
+          );
+        }
+
+        const [errActivityGet, dbActivityGet] =
+          await this.querier.getPipedriveActivityByDealIdAndPipedriveId(
+            dealId,
+            companyId,
+            activityId,
+          );
+        if (errActivityGet) throw errActivityGet;
+
+        const [errActivityTypeGet, dbActivityTypeGet] =
+          await this.querier.getPipedriveActivityTypeById(
+            mapping.pipedriveActivityTypeId,
+          );
+        if (errActivityTypeGet) throw errActivityTypeGet;
+
+        const api = new ActivitiesApi(this.configV2);
+
+        const res = await api.updateActivity({
+          id: activityId,
+          AddActivityRequest: {
+            subject: dbActivityTypeGet.name,
+            type: dbActivityTypeGet.keyString,
+            done: true,
+          },
+        });
+
+        if (!res.success || !res.data) {
+          throw new CalIntError(
+            ERROR_MESSAGES.PIPEDRIVE_ACTIVITY_UPDATE_FAILED,
+            "PIPEDRIVE_ACTIVITY_UPDATE_FAILED",
+          );
+        }
+
+        const activity = dbActivityGet.pipedrive_activities;
+
+        activity.activityTypeId = mapping.pipedriveActivityTypeId;
+        const [errActivityUpdate] =
+          await this.querier.updatePipedriveActivity(activity);
+        if (errActivityUpdate) throw errActivityUpdate;
+
+        return dbActivityGet.calendly_events;
+      },
+      "updateActivityNoShow",
+      "api",
+      {
+        service: "Pipedrive",
+        method: "PATCH",
+        endpoint: `/api/v2/activities/{id}`,
+      },
+      { activityId, dealId, companyId, mapping },
+    );
+  }
+
   async updateActivity(
     dbEvent: CalendlyEvent,
     mapping: TypeMappingType,
