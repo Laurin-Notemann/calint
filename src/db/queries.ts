@@ -633,7 +633,7 @@ export class DatabaseQueries {
             and(
               eq(pipedriveActivities.pipedriveId, pipedriveActivityId),
               eq(
-                pipedriveActivities.id,
+                pipedriveActivities.activityTypeId,
                 eventActivityTypesMapping.pipedriveActivityTypeId,
               ),
             ),

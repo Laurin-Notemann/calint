@@ -84,9 +84,8 @@ export class CalintSetup {
         );
         if (!noshowMapping) {
           throw new CalIntError(
-            ERROR_MESSAGES.NO_CREATE_MAPPING_FOUND,
-            "NO_CREATE_MAPPING_FOUND",
-            true,
+            ERROR_MESSAGES.NO_NO_SHOW_MAPPING_FOUND,
+            "NO_NO_SHOW_MAPPING_FOUND",
           );
         }
 
