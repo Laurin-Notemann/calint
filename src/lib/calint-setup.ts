@@ -71,30 +71,11 @@ export class CalintSetup {
         );
         if (errCompany) throw errCompany;
 
-        const [errMapping, dbMapping] =
-          await this.querier.getTypeMappingsByActivityId(
-            company.id,
-            activityId,
-          );
-
-        if (errMapping) throw errMapping;
-
-        const noshowMapping = dbMapping.find(
-          (mapping) => mapping.event_activity_types_mapping.type === "noshow",
-        );
-        if (!noshowMapping) {
-          throw new CalIntError(
-            ERROR_MESSAGES.NO_NO_SHOW_MAPPING_FOUND,
-            "NO_NO_SHOW_MAPPING_FOUND",
-          );
-        }
-
         const [errUpdateActivity, dbEvent] =
           await this.pipedriveController.updateActivityNoShow(
             activityId,
             dealId,
             company.id,
-            noshowMapping.event_activity_types_mapping,
           );
         if (errUpdateActivity) throw errUpdateActivity;
 

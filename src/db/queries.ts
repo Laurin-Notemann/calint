@@ -624,21 +624,36 @@ export class DatabaseQueries {
     return withLogging(
       this.logger,
       "info",
-      () => {
-        return db
-          .select()
+      async () => {
+        const firstMapping = await db
+          .select({
+            eventTypeId: eventActivityTypesMapping.calendlyEventTypeId,
+          })
           .from(eventActivityTypesMapping)
           .innerJoin(
             pipedriveActivities,
             and(
-              eq(pipedriveActivities.pipedriveId, pipedriveActivityId),
+              eq(eventActivityTypesMapping.companyId, companyId),
               eq(
                 pipedriveActivities.activityTypeId,
                 eventActivityTypesMapping.pipedriveActivityTypeId,
               ),
             ),
           )
-          .where(eq(eventActivityTypesMapping.companyId, companyId));
+          .where(eq(pipedriveActivities.pipedriveId, pipedriveActivityId));
+
+        if (firstMapping.length !== 1)
+          throw new CalIntError(
+            ERROR_MESSAGES.TYPE_MAPPING_NOT_FOUND,
+            "TYPE_MAPPING_NOT_FOUND",
+          );
+
+        const [err, res] = await this.getTypeMappingsByEventTypeId(
+          firstMapping[0].eventTypeId,
+        );
+        if (err) throw err;
+
+        return res;
       },
       "getTypeMapping",
       "db",

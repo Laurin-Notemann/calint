@@ -23,6 +23,7 @@ import createLogger, {
   PromiseReturn,
   CalIntError,
   ERROR_MESSAGES,
+  logMessage,
 } from "@/utils/logger";
 import {
   CalendlyEvent,
@@ -147,7 +148,6 @@ export class PipedriveController {
     activityId: number,
     dealId: number,
     companyId: string,
-    mapping: TypeMappingType,
   ) {
     return withLogging(
       this.logger,
@@ -157,6 +157,33 @@ export class PipedriveController {
           throw new CalIntError(
             ERROR_MESSAGES.CONFIG_NOT_SET,
             "CONFIG_NOT_SET",
+          );
+        }
+
+        const [errMapping, dbMapping] =
+          await this.querier.getTypeMappingsByActivityId(companyId, activityId);
+
+        const api = new ActivitiesApi(this.configV2);
+
+        // TODO: ask Leonard, because I could set it to done but
+        // i cant edit the activity type if there is no mapping
+        //if (errMapping && errMapping.code === 'TYPE_MAPPING_NOT_FOUND') {
+        //  const res = await api.updateActivity({
+        //    id: activityId,
+        //    AddActivityRequest: {
+        //      done: true,
+        //    },
+        //  });
+
+        //}
+        if (errMapping) throw errMapping;
+
+        const mappings = dbMapping.find((mapping) => mapping.type === "noshow");
+
+        if (!mappings) {
+          throw new CalIntError(
+            ERROR_MESSAGES.NO_NO_SHOW_MAPPING_FOUND,
+            "NO_NO_SHOW_MAPPING_FOUND",
           );
         }
 
@@ -170,11 +197,9 @@ export class PipedriveController {
 
         const [errActivityTypeGet, dbActivityTypeGet] =
           await this.querier.getPipedriveActivityTypeById(
-            mapping.pipedriveActivityTypeId,
+            mappings.pipedriveActivityTypeId,
           );
         if (errActivityTypeGet) throw errActivityTypeGet;
-
-        const api = new ActivitiesApi(this.configV2);
 
         const res = await api.updateActivity({
           id: activityId,
@@ -194,7 +219,7 @@ export class PipedriveController {
 
         const activity = dbActivityGet.pipedrive_activities;
 
-        activity.activityTypeId = mapping.pipedriveActivityTypeId;
+        activity.activityTypeId = mappings.pipedriveActivityTypeId;
         const [errActivityUpdate] =
           await this.querier.updatePipedriveActivity(activity);
         if (errActivityUpdate) throw errActivityUpdate;
@@ -208,7 +233,7 @@ export class PipedriveController {
         method: "PATCH",
         endpoint: `/api/v2/activities/{id}`,
       },
-      { activityId, dealId, companyId, mapping },
+      { activityId, dealId, companyId },
     );
   }
 
