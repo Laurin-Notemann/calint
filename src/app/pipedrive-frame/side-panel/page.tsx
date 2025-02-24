@@ -40,10 +40,10 @@ function PipedriveFrameContent() {
     queryFn: async (): Promise<JsonPanel> => {
       const res = await fetch(
         env.NEXT_PUBLIC_BASE_URL +
-          "/api/v1/jsonpipedrive?userId=" +
-          userId +
-          "&selectedIds=" +
-          dealId,
+        "/api/v1/jsonpipedrive?userId=" +
+        userId +
+        "&selectedIds=" +
+        dealId,
       );
 
       return res.json();
@@ -87,6 +87,7 @@ function PipedriveFrameContent() {
                     userId: parseInt(userId),
                     show: true,
                     typeKeyString: activity.typeKeyString,
+                    isDb: activity.isDb
                   })
                 }
               >
@@ -96,10 +97,11 @@ function PipedriveFrameContent() {
                 onClick={() =>
                   mutate({
                     activityId: activity.id,
-                    typeKeyString: activity.typeKeyString,
                     dealId: parseInt(dealId),
                     userId: parseInt(userId),
                     show: false,
+                    typeKeyString: activity.typeKeyString,
+                    isDb: activity.isDb
                   })
                 }
               >
