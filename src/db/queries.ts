@@ -49,13 +49,53 @@ export class DatabaseQueries {
     this.logger = createLogger("DatabaseQueries");
   }
 
+  async returnActivitiesWithActiveMapping(
+    activities: Activity[],
+    companyId: string,
+  ) {
+    return withLogging(
+      this.logger,
+      "info",
+      async () => {
+        const typeKeyStrings = activities.map((activity) => activity.type);
+
+        const mappings = await db
+          .select()
+          .from(eventActivityTypesMapping)
+          .innerJoin(
+            pipedriveActivityTypes,
+            eq(
+              pipedriveActivityTypes.id,
+              eventActivityTypesMapping.pipedriveActivityTypeId,
+            ),
+          )
+          .where(
+            and(
+              inArray(pipedriveActivityTypes.keyString, typeKeyStrings),
+              eq(eventActivityTypesMapping.companyId, companyId),
+            ),
+          );
+
+        const mappingsKeyString = mappings.map(
+          (mapping) => mapping.pipedrive_activity_types.keyString,
+        );
+
+        return activities.filter((activity) =>
+          mappingsKeyString.includes(activity.type),
+        );
+      },
+      "returnActivitiesWithActiveMapping",
+      "db",
+      undefined,
+      { activities, companyId },
+    );
+  }
+
   async getCalendlyEventsAndPipeDriveActivitiesByPipedriveActivities(
     activities: Activity[],
     companyId: string,
     dealId: number,
-  ): PromiseReturn<
-    { calendlyEvent: CalendlyEvent; pipedriveActivity: PipedriveActivity }[]
-  > {
+  ) {
     return withLogging(
       this.logger,
       "info",
@@ -66,6 +106,7 @@ export class DatabaseQueries {
           .select({
             calendlyEvent: calendlyEvents,
             pipedriveActivity: pipedriveActivities,
+            pipedriveActivityType: pipedriveActivityTypes,
           })
           .from(pipedriveActivities)
           .innerJoin(
@@ -76,6 +117,10 @@ export class DatabaseQueries {
             calendlyEvents,
             eq(pipedriveActivities.calendlyEventId, calendlyEvents.id),
           )
+          .innerJoin(
+            pipedriveActivityTypes,
+            eq(pipedriveActivityTypes.id, pipedriveActivities.activityTypeId),
+          )
           .where(
             and(
               inArray(pipedriveActivities.pipedriveId, activityIds),
@@ -84,7 +129,7 @@ export class DatabaseQueries {
             ),
           );
       },
-      "getCalendlyEventsByPipedriveActivities",
+      "getCalendlyEventsAndPipeDriveActivitiesByPipedriveActivities",
       "db",
       undefined,
       { activities, companyId, dealId },
@@ -617,10 +662,7 @@ export class DatabaseQueries {
     );
   }
 
-  async getTypeMappingsByActivityId(
-    companyId: string,
-    pipedriveActivityId: number,
-  ) {
+  async getTypeMappingsByActivityId(companyId: string, keyString: string) {
     return withLogging(
       this.logger,
       "info",
@@ -631,16 +673,16 @@ export class DatabaseQueries {
           })
           .from(eventActivityTypesMapping)
           .innerJoin(
-            pipedriveActivities,
+            pipedriveActivityTypes,
             and(
-              eq(eventActivityTypesMapping.companyId, companyId),
               eq(
-                pipedriveActivities.activityTypeId,
+                pipedriveActivityTypes.id,
                 eventActivityTypesMapping.pipedriveActivityTypeId,
               ),
+              eq(pipedriveActivityTypes.companyId, companyId),
             ),
           )
-          .where(eq(pipedriveActivities.pipedriveId, pipedriveActivityId));
+          .where(eq(pipedriveActivityTypes.keyString, keyString));
 
         if (firstMapping.length !== 1)
           throw new CalIntError(
@@ -655,10 +697,10 @@ export class DatabaseQueries {
 
         return res;
       },
-      "getTypeMapping",
+      "getTypeMappingsByActivityId",
       "db",
       undefined,
-      { companyId, pipedriveActivityId },
+      { companyId, keyString },
     );
   }
 
@@ -679,7 +721,7 @@ export class DatabaseQueries {
             ),
           );
       },
-      "getTypeMapping",
+      "getTypeMappingsByEventTypeId",
       "db",
       undefined,
       { calendlyEventTypeId },

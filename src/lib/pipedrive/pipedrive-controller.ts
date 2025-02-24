@@ -23,7 +23,6 @@ import createLogger, {
   PromiseReturn,
   CalIntError,
   ERROR_MESSAGES,
-  logMessage,
 } from "@/utils/logger";
 import {
   CalendlyEvent,
@@ -148,6 +147,8 @@ export class PipedriveController {
     activityId: number,
     dealId: number,
     companyId: string,
+    typeKeyString: string,
+    isDb: boolean,
   ) {
     return withLogging(
       this.logger,
@@ -161,7 +162,10 @@ export class PipedriveController {
         }
 
         const [errMapping, dbMapping] =
-          await this.querier.getTypeMappingsByActivityId(companyId, activityId);
+          await this.querier.getTypeMappingsByActivityId(
+            companyId,
+            typeKeyString,
+          );
 
         const api = new ActivitiesApi(this.configV2);
 
@@ -187,21 +191,48 @@ export class PipedriveController {
           );
         }
 
-        const [errActivityGet, dbActivityGet] =
-          await this.querier.getPipedriveActivityByDealIdAndPipedriveId(
-            dealId,
-            companyId,
-            activityId,
-          );
-        if (errActivityGet) throw errActivityGet;
-
         const [errActivityTypeGet, dbActivityTypeGet] =
           await this.querier.getPipedriveActivityTypeById(
             mappings.pipedriveActivityTypeId,
           );
         if (errActivityTypeGet) throw errActivityTypeGet;
 
-        const res = await api.updateActivity({
+        if (isDb) {
+          const [errActivityGet, dbActivityGet] =
+            await this.querier.getPipedriveActivityByDealIdAndPipedriveId(
+              dealId,
+              companyId,
+              activityId,
+            );
+          if (errActivityGet) throw errActivityGet;
+
+          const res = await api.updateActivity({
+            id: activityId,
+            AddActivityRequest: {
+              subject: dbActivityTypeGet.name,
+              type: dbActivityTypeGet.keyString,
+              done: true,
+            },
+          });
+
+          if (!res.success || !res.data) {
+            throw new CalIntError(
+              ERROR_MESSAGES.PIPEDRIVE_ACTIVITY_UPDATE_FAILED,
+              "PIPEDRIVE_ACTIVITY_UPDATE_FAILED",
+            );
+          }
+
+          const activity = dbActivityGet.pipedrive_activities;
+
+          activity.activityTypeId = mappings.pipedriveActivityTypeId;
+          const [errActivityUpdate] =
+            await this.querier.updatePipedriveActivity(activity);
+          if (errActivityUpdate) throw errActivityUpdate;
+
+          return dbActivityGet.calendly_events;
+        }
+
+        await api.updateActivity({
           id: activityId,
           AddActivityRequest: {
             subject: dbActivityTypeGet.name,
@@ -210,21 +241,7 @@ export class PipedriveController {
           },
         });
 
-        if (!res.success || !res.data) {
-          throw new CalIntError(
-            ERROR_MESSAGES.PIPEDRIVE_ACTIVITY_UPDATE_FAILED,
-            "PIPEDRIVE_ACTIVITY_UPDATE_FAILED",
-          );
-        }
-
-        const activity = dbActivityGet.pipedrive_activities;
-
-        activity.activityTypeId = mappings.pipedriveActivityTypeId;
-        const [errActivityUpdate] =
-          await this.querier.updatePipedriveActivity(activity);
-        if (errActivityUpdate) throw errActivityUpdate;
-
-        return dbActivityGet.calendly_events;
+        return null;
       },
       "updateActivityNoShow",
       "api",

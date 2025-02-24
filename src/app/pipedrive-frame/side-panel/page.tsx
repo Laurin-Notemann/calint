@@ -13,6 +13,8 @@ export type ShowMutation = {
   dealId: number;
   userId: number;
   show: boolean;
+  typeKeyString: string;
+  isDb: boolean;
 };
 
 function PipedriveFrameContent() {
@@ -84,6 +86,7 @@ function PipedriveFrameContent() {
                     dealId: parseInt(dealId),
                     userId: parseInt(userId),
                     show: true,
+                    typeKeyString: activity.typeKeyString,
                   })
                 }
               >
@@ -93,6 +96,7 @@ function PipedriveFrameContent() {
                 onClick={() =>
                   mutate({
                     activityId: activity.id,
+                    typeKeyString: activity.typeKeyString,
                     dealId: parseInt(dealId),
                     userId: parseInt(userId),
                     show: false,

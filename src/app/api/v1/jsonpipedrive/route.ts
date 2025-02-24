@@ -8,13 +8,17 @@ import { NextRequest, NextResponse } from "next/server";
 const logger = createLogger("jsonpipedrive");
 
 export type JsonPanel = {
-  data: {
-    id: number;
-    header: string;
-    join_meeting: string;
-    cancel_meeting: string;
-    reschedule_meeting: string;
-  }[];
+  data: JsonPanelData[];
+};
+
+export type JsonPanelData = {
+  id: number;
+  header: string;
+  join_meeting?: string;
+  cancel_meeting?: string;
+  reschedule_meeting?: string;
+  typeKeyString: string;
+  isDb: boolean;
 };
 
 export async function GET(request: NextRequest) {

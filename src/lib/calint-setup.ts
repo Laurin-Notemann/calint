@@ -16,7 +16,7 @@ import {
 } from "@/db/schema";
 import { InviteePayload, WebhookPayload } from "./calendly-client";
 import { BaseUser } from "pipedrive/v1";
-import { JsonPanel } from "@/app/api/v1/jsonpipedrive/route";
+import { JsonPanel, JsonPanelData } from "@/app/api/v1/jsonpipedrive/route";
 import { MappingsRequestBody } from "@/app/api/v1/mapping/create/route";
 import { MappingSelections } from "@/components/pipedrive-setup";
 import { NextRequest } from "next/server";
@@ -51,8 +51,14 @@ export class CalintSetup {
       this.logger,
       "info",
       async () => {
-        const { userId, show, activityId, dealId }: ShowMutation =
-          await request.json();
+        const {
+          userId,
+          show,
+          activityId,
+          dealId,
+          typeKeyString,
+          isDb,
+        }: ShowMutation = await request.json();
 
         const [err, user] = await this.querier.getUser(userId);
         if (err) throw err;
@@ -76,13 +82,17 @@ export class CalintSetup {
             activityId,
             dealId,
             company.id,
+            typeKeyString,
+            isDb,
           );
         if (errUpdateActivity) throw errUpdateActivity;
 
-        dbEvent.status = "noshow";
+        if (isDb && dbEvent) {
+          dbEvent.status = "noshow";
 
-        const [errUpdate] = await this.querier.updateCalendlyEvent(dbEvent);
-        if (errUpdate) throw errUpdate;
+          const [errUpdate] = await this.querier.updateCalendlyEvent(dbEvent);
+          if (errUpdate) throw errUpdate;
+        }
 
         return true;
       },
@@ -183,17 +193,40 @@ export class CalintSetup {
           );
         if (errActivitiesEventsGet) throw errActivitiesEventsGet;
 
-        const panelData: JsonPanel = {
-          data: dbActivitiesEventsGet.map((res) => ({
+        const [errActivityManual, apiActivityesManuallyAdded] =
+          await this.querier.returnActivitiesWithActiveMapping(
+            apiActivityGet,
+            pipedriveUser.companyId,
+          );
+        if (errActivityManual) throw errActivityManual;
+
+        const dbActivityIds = new Set(
+          dbActivitiesEventsGet.map(
+            (activity) => activity.pipedriveActivity.pipedriveId,
+          ),
+        );
+
+        const panelData: JsonPanelData[] = [
+          ...dbActivitiesEventsGet.map((res) => ({
             id: res.pipedriveActivity.pipedriveId,
             header: res.pipedriveActivity.name,
             join_meeting: res.calendlyEvent.joinUrl,
             reschedule_meeting: res.calendlyEvent.rescheduleUrl,
             cancel_meeting: res.calendlyEvent.cancelUrl,
+            typeKeyString: res.pipedriveActivityType.keyString,
+            isDb: true,
           })),
-        };
+          ...apiActivityesManuallyAdded
+            .filter((activity) => !dbActivityIds.has(activity.id))
+            .map((res) => ({
+              id: res.id,
+              header: res.subject,
+              typeKeyString: res.type,
+              isDb: false,
+            })),
+        ];
 
-        return panelData;
+        return { data: panelData } as JsonPanel;
       },
       "getJsonPanelData",
       "general",
