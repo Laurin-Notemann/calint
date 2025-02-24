@@ -18,7 +18,7 @@ const TestPageContent = () => {
     queryFn: async (): Promise<SettingsDataRes> => {
       const res = await fetch(
         "http://localhost:3000/api/v1/settings-modal?userId=" +
-        searchParams.get("userId"),
+          searchParams.get("userId"),
       );
 
       return res.json();
