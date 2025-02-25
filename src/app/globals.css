@@ -3,30 +3,41 @@
 @tailwind utilities;
 
 :root {
-  --background: white;
-  --foreground: black;
+  --background: #F5F5F6;
+  --foreground: #FFF;
+  --pipedrive-hover-on-dropdown: #F5F5F6;
+  --pipedrive-dropwdown-border: #C8C8CB;
+  --pipedrive-hover-on-background: #EBEBEC;
+  --pipedrive-hover-on-foreground: #F4F4F4;
+  --pipedrive-primary-text: #21232C;
+  --pipedrive-text-button: #FFF;
+  --pipedrive-green: #2C8647;
+  --pipedrive-green-hover: #097838;
+  --pipedrive-red: #D83C38;
+  --pipedrive-red-hover: #C82627;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: black;
-    --foreground: white;
+    --background: #0E1017;
+    --foreground: #1E2029;
+    --pipedrive-hover-on-dropdown: #2A2C35;
+    --pipedrive-dropwdown-border: #3C3D45;
+    --pipedrive-hover-on-background: #1A1C23;
+    --pipedrive-hover-on-foreground: #292B34;
+    --pipedrive-primary-text: #E2E2E4;
+    --pipedrive-text-button: #FFF;
+    --pipedrive-green: #3C824E;
+    --pipedrive-green-hover: #5D9967;
+    --pipedrive-red: #CC4542;
+    --pipedrive-red-hover: #E0645E;
   }
 }
 
 body {
   font-family:
-    -apple-system,
-    BlinkMacSystemFont,
-    Segoe UI,
-    Roboto,
-    Oxygen,
-    Ubuntu,
-    Cantarell,
-    Fira Sans,
-    Droid Sans,
-    Helvetica Neue,
+    Inter,
     sans-serif;
   background: var(--background);
-  color: var(--foreground);
+  color: var(--pipedrive-primary-text);
 }

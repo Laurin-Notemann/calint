@@ -1,10 +1,11 @@
 "use client";
-import { FC, Suspense, useEffect, useState } from "react";
+import { FC, Suspense, useEffect, useState, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import AppExtensionsSDK from "@pipedrive/app-extensions-sdk";
-import { JsonPanel, JsonPanelError } from "@/app/api/v1/jsonpipedrive/route";
+import { JsonPanel, JsonPanelData, JsonPanelError } from "@/app/api/v1/jsonpipedrive/route";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { env } from "@/lib/env";
+import ArrowDown from 'public/triangle-down-svgrepo-com(1).svg'
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,9 @@ function PipedriveFrameContent() {
       action?: "show" | "noshow";
     };
   }>({});
+  const [dropdownOpen, setDropdownOpen] = useState<{ [key: number]: boolean }>({});
+  const [activeDropdown, setActiveDropdown] = useState<number | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const userId = searchParams.get("userId");
   const dealId = searchParams.get("selectedIds");
@@ -88,6 +92,29 @@ function PipedriveFrameContent() {
     initializePipedrive();
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setActiveDropdown(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const toggleDropdown = (activityId: number) => {
+    setActiveDropdown(prevActiveDropdown =>
+      prevActiveDropdown === activityId ? null : activityId
+    );
+  };
+
+  const hasLinks = (activity: JsonPanelData) => {
+    return activity.join_meeting || activity.cancel_meeting || activity.reschedule_meeting;
+  };
+
   if (!userId)
     return <TextMiddle content={"UserId not found"} />;
 
@@ -105,14 +132,7 @@ function PipedriveFrameContent() {
       {data && data.data.length > 0 ? (
         data.data.map((activity, index) => {
           const activityState = localState[activity.id];
-
-          if (activityState?.status === "success") {
-            return (
-              <div key={index} className="p-4 rounded-lg">
-                Item successfully set to {activityState.action}
-              </div>
-            );
-          }
+          const isDropdownOpen = activeDropdown === activity.id;
 
           return (
             <div
@@ -121,60 +141,92 @@ function PipedriveFrameContent() {
             >
               <h2 className="font-semibold text-lg">{activity.header}</h2>
               <div className="flex gap-2 items-center">
-                {activity.join_meeting && (
-                  <a
-                    href={activity.join_meeting}
-                    className="text-blue-600 hover:text-blue-800 underline"
-                  >
-                    Join
-                  </a>
+                {activityState?.status === "success" ? (
+                  <div className="h-10 p-1 px-3 font-semibold bg-gray-200 text-gray-700 rounded">
+                    Item set to {activityState.action}
+                  </div>
+                ) : (
+                  <>
+                    <button
+                      onClick={() =>
+                        mutate({
+                          activityId: activity.id,
+                          dealId: parseInt(dealId),
+                          userId: parseInt(userId),
+                          show: true,
+                          typeKeyString: activity.typeKeyString,
+                          isDb: activity.isDb,
+                        })
+                      }
+                      className="h-8 p-1.5 px-3.5 text-sm font-semibold bg-pipedrive-green text-pipedrive-text-button rounded hover:bg-pipedrive-green-hover transition"
+                      disabled={!!activeDropdown}
+                    >
+                      Mapping
+                    </button>
+                    <button
+                      onClick={() =>
+                        mutate({
+                          activityId: activity.id,
+                          dealId: parseInt(dealId),
+                          userId: parseInt(userId),
+                          show: false,
+                          typeKeyString: activity.typeKeyString,
+                          isDb: activity.isDb,
+                        })
+                      }
+                      className="h-8 p-1.5 px-3.5 text-sm font-semibold bg-pipedrive-red text-pipedrive-text-button rounded hover:bg-pipedrive-red-hover transition"
+                      disabled={!!activeDropdown}
+                    >
+                      No-Show
+                    </button>
+                    {hasLinks(activity) && (
+                      <div className="relative" ref={dropdownRef}>
+                        <button
+                          onClick={() => toggleDropdown(activity.id)}
+                          className="h-8 w-8 border flex justify-center border-pipedrive-dropwdown-border text-pipedrive-primary-text rounded hover:bg-pipedrive-hover-on-background transition"
+                        >
+                          <ArrowDown
+                            className="w-2 h-2 fill-pipedrive-primary-text self-center text-center"
+                          />
+                        </button>
+                        {isDropdownOpen && (
+                          <div className="absolute right-0 mt-2 py-2 w-48 bg-white rounded-md shadow-xl z-20">
+                            {activity.join_meeting && (
+                              <a
+                                href={activity.join_meeting}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                              >
+                                Join
+                              </a>
+                            )}
+                            {activity.cancel_meeting && (
+                              <a
+                                href={activity.cancel_meeting}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                              >
+                                Cancel
+                              </a>
+                            )}
+                            {activity.reschedule_meeting && (
+                              <a
+                                href={activity.reschedule_meeting}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                              >
+                                Reschedule
+                              </a>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
                 )}
-                {activity.cancel_meeting && (
-                  <a
-                    href={activity.cancel_meeting}
-                    className="text-blue-600 hover:text-blue-800 underline"
-                  >
-                    Cancel
-                  </a>
-                )}
-                {activity.reschedule_meeting && (
-                  <a
-                    href={activity.reschedule_meeting}
-                    className="text-blue-600 hover:text-blue-800 underline"
-                  >
-                    Reschedule
-                  </a>
-                )}
-                <button
-                  onClick={() =>
-                    mutate({
-                      activityId: activity.id,
-                      dealId: parseInt(dealId),
-                      userId: parseInt(userId),
-                      show: true,
-                      typeKeyString: activity.typeKeyString,
-                      isDb: activity.isDb,
-                    })
-                  }
-                  className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition"
-                >
-                  Show
-                </button>
-                <button
-                  onClick={() =>
-                    mutate({
-                      activityId: activity.id,
-                      dealId: parseInt(dealId),
-                      userId: parseInt(userId),
-                      show: false,
-                      typeKeyString: activity.typeKeyString,
-                      isDb: activity.isDb,
-                    })
-                  }
-                  className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600  transition"
-                >
-                  No-Show
-                </button>
                 {activityState?.status === "error" && (
                   <span className="text-red-500 text-xl">✗</span>
                 )}
@@ -189,9 +241,10 @@ function PipedriveFrameContent() {
   );
 }
 
+
 export default function PipedriveFrame() {
   return (
-    <Suspense fallback={<TextMiddle content="Loading..."/>}>
+    <Suspense fallback={<TextMiddle content="Loading..." />}>
       <PipedriveFrameContent />
     </Suspense>
   );

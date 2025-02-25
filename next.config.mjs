@@ -4,6 +4,10 @@ import path from 'path';
 const nextConfig = {
   webpack: (config) => {
     config.resolve.alias['hexoid'] = path.resolve('node_modules/hexoid/dist/index.js');
+    config.module.rules.push({
+      test: /\.svg$/,
+      use: ["@svgr/webpack"]
+    });
     return config;
   },
   async headers() {
