@@ -68,12 +68,10 @@ function PipedriveFrameContent() {
       }));
       console.error("Mutation error:", err);
     },
-    onSuccess: (_, variables) => {
-      setTimeout(() => {
-        queryClient.invalidateQueries({
-          queryKey: ["settingsData", userId, dealId],
-        });
-      }, 0.5);
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["settingsData", userId, dealId],
+      });
     },
   });
 

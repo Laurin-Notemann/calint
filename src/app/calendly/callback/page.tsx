@@ -22,12 +22,20 @@ function CalendlyRedirectContent() {
     }
   }, [router, searchParams]);
 
-  return null;
+  return (
+    <div className="flex flex-col">
+      <h1 className="self-center text-2xl">Currently redirecting to Calendly.</h1>
+    </div>
+  );
 }
 
 export default function CalendlyRedirect() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={
+      <div className="flex flex-col">
+        <h1 className="self-center text-2xl">Currently redirecting to Calendly.</h1>
+      </div>
+    }>
       <CalendlyRedirectContent />
     </Suspense>
   );

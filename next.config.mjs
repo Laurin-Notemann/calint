@@ -35,7 +35,7 @@ const nextConfig = {
         ],
       },
       {
-        source: '/pipedrive-frame/settings-modal',
+        source: '/pipedrive-frame/mappings-modal',
         headers: [
           {
             key: 'X-Frame-Options',

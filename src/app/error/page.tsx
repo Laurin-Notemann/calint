@@ -1,12 +1,14 @@
-"use server";
-
 export default async function ErrorPage({
   searchParams,
 }: {
   searchParams: { [key: string]: string | string[] | undefined };
 }) {
   const errorMsg = searchParams["error-msg"];
-  console.log("Error from params:", JSON.stringify(errorMsg));
 
-  return <div>{errorMsg || "Could not use OAuth to login with Pipedrive"}</div>;
+  return <div className="flex flex-col gap-10 mt-20">
+    <h1 className="text-2xl self-center">An Error has occured: </h1>
+    <p className="text-lg self-center text-red-600">
+      {errorMsg || "Some unkown issue with OAuth. Please contact: laurin.notemann@gmail.com"}
+    </p>
+  </div>;
 }
