@@ -1243,6 +1243,7 @@ export class DatabaseQueries {
           throw new CalIntError(
             ERROR_MESSAGES.COMPANY_NOT_FOUND,
             "COMPANY_NOT_FOUND",
+            true,
           );
         } else if (company.length > 1) {
           throw new CalIntError(

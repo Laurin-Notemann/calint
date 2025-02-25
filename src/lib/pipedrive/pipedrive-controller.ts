@@ -23,6 +23,7 @@ import createLogger, {
   PromiseReturn,
   CalIntError,
   ERROR_MESSAGES,
+  logMessage,
 } from "@/utils/logger";
 import {
   CalendlyEvent,

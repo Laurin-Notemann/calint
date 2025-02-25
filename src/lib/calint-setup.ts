@@ -183,6 +183,11 @@ export class CalintSetup {
 
         const [errActivityGetApi, apiActivityGet] =
           await this.pipedriveController.getActivityByPipedriveDealId(dealId);
+        if (
+          errActivityGetApi &&
+          errActivityGetApi.code === "PIPEDRIVE_ACTIVITY_NOT_FOUND"
+        )
+          return { data: [] };
         if (errActivityGetApi) throw errActivityGetApi;
 
         const [errActivitiesEventsGet, dbActivitiesEventsGet] =
