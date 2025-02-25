@@ -31,5 +31,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(errorUrl);
   }
 
-  return NextResponse.redirect(new URL("/topipedrive", request.url));
+  return NextResponse.redirect(new URL("/success", request.url));
 }

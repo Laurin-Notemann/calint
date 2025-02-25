@@ -93,7 +93,7 @@ function PipedriveFrameContent() {
     return <div className="text-red-500 font-semibold">DealId not found</div>;
 
   if (error)
-    return <div className="">Could not get any data: {error.message}</div>;
+    return <div className="">Could not get any data: {"" + error}</div>;
 
   if (isLoading)
     return <div className="">Currently fetching Pipedrive Activities...</div>;
