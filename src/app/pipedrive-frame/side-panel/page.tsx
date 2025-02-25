@@ -1,8 +1,8 @@
 "use client";
-import { Suspense, useEffect, useState } from "react";
+import { FC, Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import AppExtensionsSDK from "@pipedrive/app-extensions-sdk";
-import { JsonPanel } from "@/app/api/v1/jsonpipedrive/route";
+import { JsonPanel, JsonPanelError } from "@/app/api/v1/jsonpipedrive/route";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { env } from "@/lib/env";
 
@@ -38,7 +38,8 @@ function PipedriveFrameContent() {
         `${env.NEXT_PUBLIC_BASE_URL}/api/v1/jsonpipedrive?userId=${userId}&selectedIds=${dealId}`,
       );
       if (!res.ok) {
-        throw new Error("Network response was not ok");
+        const err: JsonPanelError = await res.json()
+        throw new Error(err.error);
       }
       return res.json();
     },
@@ -88,15 +89,16 @@ function PipedriveFrameContent() {
   }, []);
 
   if (!userId)
-    return <div className="text-red-500 font-semibold">UserId not found</div>;
+    return <TextMiddle content={"UserId not found"} />;
+
   if (!dealId)
-    return <div className="text-red-500 font-semibold">DealId not found</div>;
+    return <TextMiddle content={"DealId not found"} />;
 
   if (error)
-    return <div className="">Could not get any data: {"" + error}</div>;
+    return <TextMiddle content={"Could not get any data: " + JSON.stringify(error)} />;
 
   if (isLoading)
-    return <div className="">Currently fetching Pipedrive Activities...</div>;
+    return <TextMiddle content="Currently fetching Pipedrive Activities..." />;
 
   return (
     <div className="space-y-4">
@@ -115,10 +117,10 @@ function PipedriveFrameContent() {
           return (
             <div
               key={index}
-              className="flex flex-col items-start  gap-2 p-4 rounded-lg"
+              className="flex flex-row justify-center gap-2 p-4"
             >
-              <h2 className="font-semibold text-lg ">{activity.header}</h2>
-              <div className="flex flex-wrap gap-2 items-center">
+              <h2 className="font-semibold text-lg">{activity.header}</h2>
+              <div className="flex gap-2 items-center">
                 {activity.join_meeting && (
                   <a
                     href={activity.join_meeting}
@@ -181,7 +183,7 @@ function PipedriveFrameContent() {
           );
         })
       ) : (
-        <div className="">No activities available</div>
+        <TextMiddle content="No activities available" />
       )}
     </div>
   );
@@ -189,8 +191,20 @@ function PipedriveFrameContent() {
 
 export default function PipedriveFrame() {
   return (
-    <Suspense fallback={<div className="text-gray-500">Loading...</div>}>
+    <Suspense fallback={<TextMiddle content="Loading..."/>}>
       <PipedriveFrameContent />
     </Suspense>
   );
+}
+
+type TextMiddleProps = {
+  content: string;
+}
+
+const TextMiddle: FC<TextMiddleProps> = ({ content }) => {
+  return (
+    <div className="flex flex-col mt-5">
+      <p className="text-lg self-center">{content}</p>
+    </div>
+  )
 }

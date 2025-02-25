@@ -21,6 +21,11 @@ export type JsonPanelData = {
   isDb: boolean;
 };
 
+export type JsonPanelError = {
+  error: string,
+  status?: number
+}
+
 export async function GET(request: NextRequest) {
   const stringUserId = request.nextUrl.searchParams.get("userId");
   const stringDealId = request.nextUrl.searchParams.get("selectedIds");
