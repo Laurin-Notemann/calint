@@ -1,4 +1,4 @@
-import { DatabaseQueries, querier } from "@/db/queries";
+import { DatabaseQueries } from "@/db/queries";
 import { CalendlyController } from "./calendly/calendly-controller";
 import createLogger, {
   withLogging,
