@@ -40,6 +40,7 @@ import createLogger, {
   CalIntError,
   ERROR_MESSAGES,
   PromiseReturn,
+  logMessage,
 } from "@/utils/logger";
 
 export class DatabaseQueries {
@@ -928,9 +929,9 @@ export class DatabaseQueries {
           eventTypes,
         );
 
-        if (checkError) {
+        if (checkError)
           throw checkError;
-        }
+
 
         if (!result.new.length) {
           return {
