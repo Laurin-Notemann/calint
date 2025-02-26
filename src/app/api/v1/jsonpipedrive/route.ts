@@ -22,9 +22,9 @@ export type JsonPanelData = {
 };
 
 export type JsonPanelError = {
-  error: string,
-  status?: number
-}
+  error: string;
+  status?: number;
+};
 
 export async function GET(request: NextRequest) {
   const stringUserId = request.nextUrl.searchParams.get("userId");

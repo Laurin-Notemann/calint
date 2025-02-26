@@ -916,14 +916,17 @@ export class DatabaseQueries {
   }
 
   async addAllEventTypes(
+    companyId: string,
     eventTypes: NewCalEventType[],
   ): PromiseReturn<{ message: string; added: number; skipped?: number }> {
     return withLogging(
       this.logger,
       "info",
       async () => {
-        const [checkError, result] =
-          await this.checkExistingEventTypes(eventTypes);
+        const [checkError, result] = await this.checkExistingEventTypes(
+          companyId,
+          eventTypes,
+        );
 
         if (checkError) {
           throw checkError;
@@ -951,7 +954,10 @@ export class DatabaseQueries {
     );
   }
 
-  async checkExistingEventTypes(eventTypes: NewCalEventType[]): PromiseReturn<{
+  async checkExistingEventTypes(
+    companyId: string,
+    eventTypes: NewCalEventType[],
+  ): PromiseReturn<{
     existing: CalEventType[];
     new: NewCalEventType[];
     hasConflicts: boolean;
@@ -964,9 +970,12 @@ export class DatabaseQueries {
           .select()
           .from(calEventTypes)
           .where(
-            inArray(
-              calEventTypes.uri,
-              eventTypes.map((et) => et.uri),
+            and(
+              inArray(
+                calEventTypes.uri,
+                eventTypes.map((et) => et.uri),
+              ),
+              eq(calEventTypes.companyId, companyId),
             ),
           );
 

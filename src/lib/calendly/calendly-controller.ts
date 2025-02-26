@@ -200,21 +200,24 @@ export class CalendlyController {
   }
 
   private async saveEventTypes(
+    companyId: string,
     eventTypes: NewCalEventType[],
-    userId?: number,
   ): PromiseReturn<void> {
     return withLogging(
       this.logger,
       "info",
       async () => {
-        const [error] = await this.querier.addAllEventTypes(eventTypes);
+        const [error] = await this.querier.addAllEventTypes(
+          companyId,
+          eventTypes,
+        );
         if (error) throw error;
         return undefined;
       },
       "saveEventTypes",
       "db",
       undefined,
-      { eventTypes, userId },
+      { eventTypes },
     );
   }
 
@@ -242,7 +245,7 @@ export class CalendlyController {
           dbEventTypes.push(dbEventType);
         }
 
-        const [saveErr] = await this.saveEventTypes(dbEventTypes, userId);
+        const [saveErr] = await this.saveEventTypes(companyId, dbEventTypes);
         if (saveErr) throw saveErr;
 
         return eventTypes;
@@ -316,7 +319,10 @@ export class CalendlyController {
         this.removeDuplicateEventTypes(allEventTypes);
 
         const uniqueEventTypes = Array.from(this.eventTypeMap.values());
-        const [saveErr] = await this.saveEventTypes(uniqueEventTypes, userId);
+        const [saveErr] = await this.saveEventTypes(
+          companyId,
+          uniqueEventTypes,
+        );
         if (saveErr) throw saveErr;
 
         return true;
