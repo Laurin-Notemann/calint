@@ -277,8 +277,8 @@ export class CalendlyClient {
     });
   }
 
-  async getUsersOrgMembership(id: string): PromiseReturn<CalendlyOrganizationMembership> {
-    return this.makeRequest<CalendlyOrganizationMembership>("/organization_memberships/" + id, {
+  async getUsersOrgMembership(id: string): PromiseReturn<GetOrganizationMembershipResponse> {
+    return this.makeRequest<GetOrganizationMembershipResponse>("/organization_memberships?user=" + id, {
       method: "GET",
     });
   }

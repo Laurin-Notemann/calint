@@ -88,7 +88,7 @@ export class CalendlyController {
         const [membershipErr, membership] = await this.calClient.getUsersOrgMembership(user.resource.uri)
         if (membershipErr) throw membershipErr;
 
-        if (membership.resource.role === "owner" || membership.resource.role === "admin") {
+        if (membership.collection[0].role === "owner" || membership.collection[0].role === "admin") {
           const [webhookError] = await this.calClient.createWebhookSubscription(
             user.resource.current_organization,
             user.resource.uri,
