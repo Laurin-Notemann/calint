@@ -115,9 +115,9 @@ export class CalendlyClient {
             error instanceof CalIntError
               ? error
               : new CalIntError(
-                  error instanceof Error ? error.message : String(error),
-                  "UNEXPECTED_ERROR",
-                ),
+                error instanceof Error ? error.message : String(error),
+                "UNEXPECTED_ERROR",
+              ),
             null,
           ] as const) as PromiseReturn<T>,
       );
@@ -277,12 +277,45 @@ export class CalendlyClient {
     });
   }
 
+  async getUsersOrgMembership(id: string): PromiseReturn<CalendlyOrganizationMembership> {
+    return this.makeRequest<CalendlyOrganizationMembership>("/organization_memberships/" + id, {
+      method: "GET",
+    });
+  }
+
   updateCalendlyTokens(tokens: GetAccessTokenRes) {
     this.accessToken = tokens.access_token;
     this.refreshToken = tokens.refresh_token;
     this.organization = tokens.organization;
   }
 }
+
+export type CalendlyUser = {
+  uri: string;
+  name: string;
+  slug: string;
+  email: string;
+  scheduling_url: string;
+  timezone: string;
+  avatar_url: string;
+  locale: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type CalendlyOrganizationMembershipResource = {
+  uri: string;
+  role: "user" | "admin" | "owner";
+  user: CalendlyUser;
+  organization: string;
+  updated_at: string;
+  created_at: string;
+}
+
+export type CalendlyOrganizationMembership = {
+  resource: CalendlyOrganizationMembershipResource;
+}
+
 
 export type GetAccessTokenRes = {
   token_type: "Bearer";
@@ -509,11 +542,11 @@ interface GetOrganizationMembershipResponse {
 
 export type WebhookPayload = {
   event:
-    | "invitee.created"
-    | "invitee.canceled"
-    | "invitee_no_show.created"
-    | "invitee_no_show.deleted"
-    | "routing_form_submission.created";
+  | "invitee.created"
+  | "invitee.canceled"
+  | "invitee_no_show.created"
+  | "invitee_no_show.deleted"
+  | "routing_form_submission.created";
   created_at: string;
   created_by: string;
   payload: InviteePayload;

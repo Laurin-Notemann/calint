@@ -85,15 +85,20 @@ export class CalendlyController {
             "USER_NOT_FOUND",
           );
 
-        const [webhookError] = await this.calClient.createWebhookSubscription(
-          user.resource.current_organization,
-          user.resource.uri,
-        );
-        if (
-          webhookError &&
-          !webhookError.context?.response.title.includes("Already Exists")
-        )
-          throw webhookError;
+        const [membershipErr, membership] = await this.calClient.getUsersOrgMembership(user.resource.uri)
+        if (membershipErr) throw membershipErr;
+
+        if (membership.resource.role === "owner" || membership.resource.role === "admin") {
+          const [webhookError] = await this.calClient.createWebhookSubscription(
+            user.resource.current_organization,
+            user.resource.uri,
+          );
+          if (
+            webhookError &&
+            !webhookError.context?.response.title.includes("Already Exists")
+          )
+            throw webhookError;
+        }
 
         if (!dbUserGl)
           throw new CalIntError("dbUserGl was not set", "DB_USER_GL_NOT_SET");
