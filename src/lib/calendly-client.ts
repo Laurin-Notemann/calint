@@ -290,19 +290,6 @@ export class CalendlyClient {
   }
 }
 
-export type CalendlyUser = {
-  uri: string;
-  name: string;
-  slug: string;
-  email: string;
-  scheduling_url: string;
-  timezone: string;
-  avatar_url: string;
-  locale: string;
-  created_at: string;
-  updated_at: string;
-}
-
 export type CalendlyOrganizationMembershipResource = {
   uri: string;
   role: "user" | "admin" | "owner";
