@@ -115,9 +115,9 @@ export class CalendlyClient {
             error instanceof CalIntError
               ? error
               : new CalIntError(
-                  error instanceof Error ? error.message : String(error),
-                  "UNEXPECTED_ERROR",
-                ),
+                error instanceof Error ? error.message : String(error),
+                "UNEXPECTED_ERROR",
+              ),
             null,
           ] as const) as PromiseReturn<T>,
       );
@@ -284,6 +284,8 @@ export class CalendlyClient {
       "/organization_memberships?user=" + id,
       {
         method: "GET",
+        requiresAuth: true,
+        skipTokenRefresh: true,
       },
     );
   }
@@ -533,11 +535,11 @@ interface GetOrganizationMembershipResponse {
 
 export type WebhookPayload = {
   event:
-    | "invitee.created"
-    | "invitee.canceled"
-    | "invitee_no_show.created"
-    | "invitee_no_show.deleted"
-    | "routing_form_submission.created";
+  | "invitee.created"
+  | "invitee.canceled"
+  | "invitee_no_show.created"
+  | "invitee_no_show.deleted"
+  | "routing_form_submission.created";
   created_at: string;
   created_by: string;
   payload: InviteePayload;
