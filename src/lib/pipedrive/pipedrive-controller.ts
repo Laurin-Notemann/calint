@@ -162,13 +162,28 @@ export class PipedriveController {
           );
         }
 
+        const api = new ActivitiesApi(this.configV2);
+
+        const getActivity = await api.getActivity({ id: activityId })
+
+        if (!getActivity.success || !getActivity.data || !getActivity.data.owner_id) {
+          throw new CalIntError(
+            ERROR_MESSAGES.PIPEDRIVE_ACTIVITY_GET_FAILED,
+            "PIPEDRIVE_ACTIVITY_GET_FAILED",
+          );
+        }
+
+        const ownerId = getActivity.data.owner_id
+
+        const [errActivityOwner, activityOwner] = await this.querier.getUser(ownerId)
+        if (errActivityOwner) throw errActivityOwner
+
         const [errMapping, dbMapping] =
           await this.querier.getTypeMappingsByActivityId(
             companyId,
             typeKeyString,
+            activityOwner.email
           );
-
-        const api = new ActivitiesApi(this.configV2);
 
         // TODO: ask Leonard, because I could set it to done but
         // i cant edit the activity type if there is no mapping

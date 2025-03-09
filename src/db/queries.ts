@@ -662,7 +662,7 @@ export class DatabaseQueries {
     );
   }
 
-  async getTypeMappingsByActivityId(companyId: string, keyString: string) {
+  async getTypeMappingsByActivityId(companyId: string, keyString: string, email: string) {
     return withLogging(
       this.logger,
       "info",
@@ -682,7 +682,8 @@ export class DatabaseQueries {
               eq(pipedriveActivityTypes.companyId, companyId),
             ),
           )
-          .where(eq(pipedriveActivityTypes.keyString, keyString));
+          .innerJoin(calendlyAccs, eq(calendlyAccs.uri, eventActivityTypesMapping.calendlyAccUri))
+          .where(and(eq(calendlyAccs.email, email), eq(pipedriveActivityTypes.keyString, keyString)));
 
         if (firstMapping.length !== 1)
           throw new CalIntError(

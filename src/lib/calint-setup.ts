@@ -63,6 +63,7 @@ export class CalintSetup {
         const [err, user] = await this.querier.getUser(userId);
         if (err) throw err;
 
+
         await this.pipedriveController.triggerTokenUpdate(user.id);
 
         if (show) {
@@ -106,6 +107,7 @@ export class CalintSetup {
   remapMappingsToNewTypeMappingType(
     body: MappingsRequestBody,
     companyId: string,
+    calendlyAccUri: string,
   ): NewTypeMappingType[] {
     const { mappings, eventTypeId } = body;
 
@@ -118,6 +120,7 @@ export class CalintSetup {
           typeMappings.push({
             type: type as TypeMappingType["type"],
             companyId,
+            calendlyAccUri,
             calendlyEventTypeId: eventTypeId,
             pipedriveActivityTypeId: activityType.id,
           });
@@ -146,6 +149,7 @@ export class CalintSetup {
         const newTypeMappings = this.remapMappingsToNewTypeMappingType(
           body,
           pipedriveUser.companyId,
+          user.calendly_accs.uri
         );
 
         for (const mapping of newTypeMappings) {

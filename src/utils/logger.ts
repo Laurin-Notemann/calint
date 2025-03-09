@@ -47,6 +47,7 @@ export const ERROR_MESSAGES = {
   CALENDLY_EVENT_NOT_FOUND: "Calendly Event not found.",
   CALENDLY_EVENT_TOO_MANY_FOUND: "Too many calendly events found.",
   PIPEDRIVE_ACTIVITY_UPDATE_FAILED: "Failed to update pipedrive activity.",
+  PIPEDRIVE_ACTIVITY_GET_FAILED: "Failed to get pipedrive activity.",
   PIPEDRIVE_ACTIVITY_CREATION_FAILED: "Failed to pipedrive activity in DB.",
   CALENDLY_EVENT_CREATION_FAILED: "Failed to calendly event in DB.",
   PIPEDRIVE_PERSON_CREATION_FAILED: "Failed to pipedrive person in DB.",

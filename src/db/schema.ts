@@ -165,6 +165,11 @@ export const eventActivityTypesMapping = pgTable(
       .references(() => pipedriveActivityTypes.id, {
         onDelete: "cascade",
       }),
+    calendlyAccUri: uuid("calendly_acc_uri")
+      .notNull()
+      .references(() => calendlyAccs.uri, {
+        onDelete: "cascade",
+      }),
     companyId: uuid("company_id")
       .notNull()
       .references(() => companies.id, {
