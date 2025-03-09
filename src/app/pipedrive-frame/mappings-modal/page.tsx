@@ -54,6 +54,10 @@ function PipedriveFrameContent() {
   if (isLoading)
     return <div>Currently fetching Calendly and Pipedrive data</div>;
 
+  if (!settingsData || !settingsData.data) {
+    return <div>Ask an admin to setup settings</div>;
+  }
+
   return <SetupFrame settingsData={settingsData} userId={userId} />;
 }
 

@@ -17,6 +17,10 @@ const SetupFrame = ({
   const [selectedEventType, setSelectedEventType] =
     useState<CalEventType | null>(null);
 
+  if (!settingsData || !settingsData.data || !settingsData.data.calendlyEventTypes) {
+    return <div>Missing required data from settings</div>;
+  }
+
   const handleSaveMappings = async (mappings: MappingSelections) => {
     try {
       if (!selectedEventType) {
@@ -40,27 +44,21 @@ const SetupFrame = ({
 
   return (
     <div className="h-screen flex text-2xl p-4">
-      {settingsData ? (
-        <>
-          <div className="w-1/3">
-            <CalendlyEventSidebar
-              eventTypes={settingsData.data.calendlyEventTypes}
-              onEventTypeSelect={setSelectedEventType}
-              selectedEventType={selectedEventType}
-            />
-          </div>
-          <div className="w-2/3 p-4">
-            <PipedriveSetup
-              activities={settingsData.data.pipedriveAcitvityTypes}
-              eventType={selectedEventType}
-              mappings={settingsData.data.typeMappings}
-              onSaveMappings={handleSaveMappings}
-            />
-          </div>
-        </>
-      ) : (
-        <div>Error</div>
-      )}
+      <div className="w-1/3">
+        <CalendlyEventSidebar
+          eventTypes={settingsData.data.calendlyEventTypes}
+          onEventTypeSelect={setSelectedEventType}
+          selectedEventType={selectedEventType}
+        />
+      </div>
+      <div className="w-2/3 p-4">
+        <PipedriveSetup
+          activities={settingsData.data.pipedriveAcitvityTypes}
+          eventType={selectedEventType}
+          mappings={settingsData.data.typeMappings}
+          onSaveMappings={handleSaveMappings}
+        />
+      </div>
     </div>
   );
 };
