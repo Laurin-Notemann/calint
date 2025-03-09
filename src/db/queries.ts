@@ -1,4 +1,4 @@
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, or, sql } from "drizzle-orm";
 import db from "./db";
 import {
   calendlyAccs,
@@ -40,7 +40,6 @@ import createLogger, {
   CalIntError,
   ERROR_MESSAGES,
   PromiseReturn,
-  logMessage,
 } from "@/utils/logger";
 
 export class DatabaseQueries {
@@ -929,9 +928,7 @@ export class DatabaseQueries {
           eventTypes,
         );
 
-        if (checkError)
-          throw checkError;
-
+        if (checkError) throw checkError;
 
         if (!result.new.length) {
           return {
@@ -1084,7 +1081,16 @@ export class DatabaseQueries {
         const user = await db
           .select()
           .from(users)
-          .innerJoin(calendlyAccs, eq(users.id, calendlyAccs.userId))
+          .innerJoin(
+            calendlyAccs,
+            and(
+              eq(users.id, calendlyAccs.userId),
+              or(
+                eq(calendlyAccs.role, "Admin"),
+                eq(calendlyAccs.role, "Owner"),
+              ),
+            ),
+          )
           .where(eq(users.companyId, id));
 
         if (user.length === 0) {
@@ -1441,6 +1447,7 @@ export class DatabaseQueries {
   async addCalendlyAccountToUser(
     userId: number,
     calendlyUser: CalendlyUser,
+    role: string,
     { accessToken, refreshToken, expiresAt }: AccountLogin,
   ): PromiseReturn<User> {
     return withLogging(
@@ -1452,6 +1459,7 @@ export class DatabaseQueries {
           uri: calendlyUser.uri,
           email: calendlyUser.email,
           name: calendlyUser.name,
+          role: role,
           organization: calendlyUser.current_organization,
           accessToken,
           refreshToken,

@@ -115,9 +115,9 @@ export class CalendlyClient {
             error instanceof CalIntError
               ? error
               : new CalIntError(
-                error instanceof Error ? error.message : String(error),
-                "UNEXPECTED_ERROR",
-              ),
+                  error instanceof Error ? error.message : String(error),
+                  "UNEXPECTED_ERROR",
+                ),
             null,
           ] as const) as PromiseReturn<T>,
       );
@@ -277,10 +277,15 @@ export class CalendlyClient {
     });
   }
 
-  async getUsersOrgMembership(id: string): PromiseReturn<GetOrganizationMembershipResponse> {
-    return this.makeRequest<GetOrganizationMembershipResponse>("/organization_memberships?user=" + id, {
-      method: "GET",
-    });
+  async getUsersOrgMembership(
+    id: string,
+  ): PromiseReturn<GetOrganizationMembershipResponse> {
+    return this.makeRequest<GetOrganizationMembershipResponse>(
+      "/organization_memberships?user=" + id,
+      {
+        method: "GET",
+      },
+    );
   }
 
   updateCalendlyTokens(tokens: GetAccessTokenRes) {
@@ -297,12 +302,11 @@ export type CalendlyOrganizationMembershipResource = {
   organization: string;
   updated_at: string;
   created_at: string;
-}
+};
 
 export type CalendlyOrganizationMembership = {
   resource: CalendlyOrganizationMembershipResource;
-}
-
+};
 
 export type GetAccessTokenRes = {
   token_type: "Bearer";
@@ -529,11 +533,11 @@ interface GetOrganizationMembershipResponse {
 
 export type WebhookPayload = {
   event:
-  | "invitee.created"
-  | "invitee.canceled"
-  | "invitee_no_show.created"
-  | "invitee_no_show.deleted"
-  | "routing_form_submission.created";
+    | "invitee.created"
+    | "invitee.canceled"
+    | "invitee_no_show.created"
+    | "invitee_no_show.deleted"
+    | "routing_form_submission.created";
   created_at: string;
   created_by: string;
   payload: InviteePayload;

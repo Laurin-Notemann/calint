@@ -17,7 +17,11 @@ const SetupFrame = ({
   const [selectedEventType, setSelectedEventType] =
     useState<CalEventType | null>(null);
 
-  if (!settingsData || !settingsData.data || !settingsData.data.calendlyEventTypes) {
+  if (
+    !settingsData ||
+    !settingsData.data ||
+    !settingsData.data.calendlyEventTypes
+  ) {
     return <div>Missing required data from settings</div>;
   }
 

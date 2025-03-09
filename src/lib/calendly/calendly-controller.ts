@@ -39,6 +39,10 @@ export class CalendlyController {
         const [error, user] = await this.calClient.getUserInfo();
         if (error) throw error;
 
+        const [membershipErr, membership] =
+          await this.calClient.getUsersOrgMembership(user.resource.uri);
+        if (membershipErr) throw membershipErr;
+
         const credentials = {
           accessToken: token.access_token,
           refreshToken: token.refresh_token,
@@ -73,6 +77,7 @@ export class CalendlyController {
               await this.querier.addCalendlyAccountToUser(
                 userId,
                 user.resource,
+                membership.collection[0].role,
                 credentials,
               );
             if (addAccErr) throw addAccErr;
@@ -85,10 +90,10 @@ export class CalendlyController {
             "USER_NOT_FOUND",
           );
 
-        const [membershipErr, membership] = await this.calClient.getUsersOrgMembership(user.resource.uri)
-        if (membershipErr) throw membershipErr;
-
-        if (membership.collection[0].role === "owner" || membership.collection[0].role === "admin") {
+        if (
+          membership.collection[0].role === "owner" ||
+          membership.collection[0].role === "admin"
+        ) {
           const [webhookError] = await this.calClient.createWebhookSubscription(
             user.resource.current_organization,
             user.resource.uri,

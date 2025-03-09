@@ -29,6 +29,7 @@ export const calendlyAccs = pgTable("calendly_accs", {
   name: text("name"),
   email: text("email").notNull(),
   organization: text("organization"),
+  role: text("role").notNull(),
   refreshToken: text("refresh_token").notNull(),
   accessToken: text("access_token").notNull(),
   expiresAt: timestamp("expires_at"),
